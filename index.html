@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2G JUMP ROPE - CAT EDITION</title>
+  <style>
+    :root {
+      --bg-color: #05080c;
+      --frame-bg: #151e26;
+      --accent-yellow: #ffee00;
+      --accent-red: #ff3344;
+      --pause-btn-bg: #2a3b46;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      touch-action: none;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    @keyframes supernovaPulse {
+      0% { border-color: #ff3300; }
+      50% { border-color: #ffee00; }
+      100% { border-color: #ff3300; }
+    }
+
+    @keyframes infinityPulse {
+      0% { border-color: #00ffff; }
+      33% { border-color: #ff00ff; }
+      66% { border-color: #ffee00; }
+      100% { border-color: #00ffff; }
+    }
+
+    .supernova-frame { animation: supernovaPulse 0.4s infinite !important; }
+    .infinity-frame { animation: infinityPulse 0.25s infinite !important; }
+
+    #phone-frame {
+      width: 100%;
+      max-width: 400px;
+      background: var(--frame-bg);
+      border: 4px solid #3d4f5c;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 8px 0 #080c10, 0 15px 25px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.05s, border-color 0.2s;
+    }
+
+    #mode-bar {
+      width: 100%;
+      display: flex;
+      gap: 6px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      background: #1c2730;
+      color: #8899aa;
+      border: 2px solid #3a4b56;
+      border-radius: 6px;
+      padding: 6px 0;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: #00ffff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    .leaderboard-btn {
+      background: #443300;
+      color: #ffee00;
+      border: 2px solid #ffcc00;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #status-bar {
+      width: 100%;
+      background: #080c10;
+      border: 2px solid #283742;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    .mini-btn {
+      background: var(--pause-btn-bg);
+      color: #fff;
+      border: 2px solid #5a6e7c;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #canvas-container {
+      position: relative;
+      width: 360px;
+      height: 380px;
+      max-width: 100%;
+      background: #70c5ff;
+      border: 3px solid #111;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 풀모달 오버레이 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      pointer-events: auto;
+    }
+
+    /* 모달 열렸을 때 배경 비활성화 */
+    .modal-open #phone-frame {
+      pointer-events: none;
+      filter: brightness(0.6);
+      transition: filter 0.2s ease;
+    }
+
+    .modal-open .modal-overlay {
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: #111a24;
+      border: 3px solid #00ffff;
+      border-radius: 12px;
+      padding: 20px 16px;
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 255, 255, 0.3);
+      pointer-events: auto;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffee00;
+      letter-spacing: -0.5px;
+    }
+
+    .score-summary-card {
+      background: #080c10;
+      border: 2px solid #283742;
+      border-radius: 8px;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    .score-summary-card b {
+      color: #ffee00;
+      font-size: 20px;
+    }
+
+    .modal-input {
+      background: #080c10;
+      border: 2px solid #5a6e7c;
+      color: #fff;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      border-radius: 6px;
+      text-align: center;
+      outline: none;
+    }
+
+    .modal-input:focus {
+      border-color: #00ffff;
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+    }
+
+    .modal-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 10px 0;
+      font-family: inherit;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid #fff;
+      font-size: 13px;
+    }
+
+    .modal-btn.primary { 
+      background: #00cc66; 
+      color: #000; 
+      border-color: #66ffaa; 
+    }
+    .modal-btn.secondary { 
+      background: #2a3b46; 
+      color: #bbb; 
+      border-color: #4a5c68; 
+    }
+
+    .leaderboard-list {
+      list-style: none;
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1c2730;
+      border: 1px solid #334455;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .leaderboard-item.rank-1 {
+      border-color: #ffee00;
+      background: #2b2505;
+      color: #ffee00;
+    }
+
+    /* 하단 메인 액션 버튼 */
+    #actionBtn {
+      width: 100%;
+      background: #ff5500;
+      color: #fff;
+      border: 3px solid #ffaa33;
+      border-radius: 10px;
+      padding: 13px 0;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #992200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    #actionBtn.retry-mode {
+      background: #00aa55;
+      border-color: #66ffaa;
+      box-shadow: 0 5px 0 #006633;
+    }
+
+    #actionBtn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #992200;
+    }
+
+    #actionBtn.retry-mode:active {
+      box-shadow: 0 1px 0 #006633;
+    }
+
+    #actionBtn span.sub {
+      font-size: 11px;
+      font-weight: normal;
+      color: #ffd0a0;
+    }
+
+    #actionBtn.retry-mode span.sub {
+      color: #ccffdd;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="phone-frame">
+    <div id="mode-bar">
+      <button class="mode-btn active" id="mode-normal" onclick="selectGameMode('NORMAL')">일반 순차</button>
+      <button class="mode-btn" id="mode-infinity" onclick="selectGameMode('INFINITY')">🌌 인피니티</button>
+      <button class="leaderboard-btn" onclick="openLeaderboardModal()">🏆 웹 랭킹</button>
+    </div>
+
+    <div id="status-bar">
+      <span>SCORE: <span id="score-text" style="color: #ffee00; font-size: 15px;">0</span> <span id="best-text" style="color:#8899aa; font-size:11px;">(BEST: 0)</span></span>
+      <span id="stage-badge" style="color: #66ffcc; font-size: 11px;">STAGE 1: DAY</span>
+      <button class="mini-btn" id="pauseBtn" onclick="togglePause(event)">PAUSE</button>
+    </div>
+
+    <div id="canvas-container">
+      <canvas id="gameCanvas" width="360" height="380"></canvas>
+    </div>
+
+    <!-- 하단 액션 버튼 -->
+    <button id="actionBtn" onclick="handleActionButtonClick()">
+      <span id="actionBtnTitle">점프! (JUMP)</span>
+      <span class="sub" id="actionBtnSub">탭: 소점프 / 롱홀드: 대점프 / Space</span>
+    </button>
+  </div>
+
+  <!-- 1. 게임 오버 결과 및 등록 풀모달 (최상위 루트로 이동하여 맨 앞으로 표시) -->
+  <div class="modal-overlay" id="resultModal">
+    <div class="modal-box">
+      <div class="modal-title">💥 GAME OVER</div>
+      <div class="score-summary-card">
+        <div>최종 점수: <b id="modal-score-val">0</b>점</div>
+        <div style="font-size: 11px; color:#66ffcc;" id="modal-sub-val">STAGE 1 / 0콤보</div>
+      </div>
+      <input type="text" id="nicknameInput" class="modal-input" maxlength="8" placeholder="닉네임 입력 (최대 8자)">
+      <div class="modal-btn-row">
+        <button class="modal-btn secondary" onclick="skipAndReadyRestart()">건너뛰기</button>
+        <button class="modal-btn primary" id="submitScoreBtn" onclick="submitScoreToLeaderboard()">기록 등록</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 온라인 명예의 전당 모달 (최상위 루트로 이동하여 맨 앞으로 표시) -->
+  <div class="modal-overlay" id="leaderboardModal">
+    <div class="modal-box">
+      <div class="modal-title">🏆 온라인 명예의 전당</div>
+      <ul class="leaderboard-list" id="leaderboardList">
+        <li class="leaderboard-item" style="justify-content: center;">불러오는 중...</li>
+      </ul>
+      <div id="sync-status" style="font-size: 11px; color: #8899aa;"></div>
+      <button class="modal-btn secondary" onclick="closeLeaderboardModal()">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzzz6f4UESAi0W_HwUrp7iQPVc_uCRmHQa9S6JnUVLX6girkGEngRKGvgJ2pUcpMo2d/exec";
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const scoreText = document.getElementById('score-text');
+    const bestText = document.getElementById('best-text');
+    const stageBadge = document.getElementById('stage-badge');
+    const actionBtn = document.getElementById('actionBtn');
+    const actionBtnTitle = document.getElementById('actionBtnTitle');
+    const actionBtnSub = document.getElementById('actionBtnSub');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const phoneFrame = document.getElementById('phone-frame');
+
+    const resultModal = document.getElementById('resultModal');
+    const leaderboardModal = document.getElementById('leaderboardModal');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const modalScoreVal = document.getElementById('modal-score-val');
+    const modalSubVal = document.getElementById('modal-sub-val');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const syncStatus = document.getElementById('sync-status');
+
+    let isGameOver = false;
+    let isGameStarted = false;
+    let isPaused = false;
+    let isWaitingRestart = false;
+
+    let score = 0;
+    let bestScore = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let stageLevel = 1;
+    let selectedMode = 'NORMAL';
+
+    let isCountingDown = false;
+    let countdownValue = 3;
+    let countdownScale = 2.5;
+
+    const GROUND_Y = 285;
+
+    let player = {
+      x: 180,
+      y: GROUND_Y,
+      vy: 0,
+      scaleX: 1,
+      scaleY: 1,
+      isGrounded: true,
+      gravity: 0.88,
+      baseJumpForce: -9.0,
+      isHoldingJump: false,
+      jumpHoldFrames: 0,
+      maxHoldFrames: 8
+    };
+
+    const LEFT_HAND = { x: 50, y: GROUND_Y - 26, z: 0 };
+    const RIGHT_HAND = { x: 310, y: GROUND_Y - 26, z: 0 };
+
+    let ropeAngle = 0;
+    let ropeDirection = 1;
+    let baseSpeed = 0.085;
+    let currentSpeed = 0.085;
+    let ropePassed = false;
+    let hasWhipSoundPlayed = false;
+
+    let currentPattern = 'NORMAL';
+    let patternTimer = 0;
+
+    let shakeAmount = 0;
+    let floatingTexts = [];
+    let particles = [];
+    let fireworks = [];
+    let backgroundStars = [];
+    let magmaParticles = [];
+    let warpStars = [];
+    let astroAnimals = [];
+    let spaceships = [];
+    let crashingShip = null;
+    let glassCracks = [];
+    
+    let comboPopup = { text: '', color: '#ffdd00', scale: 0, alpha: 0 };
+    let stageAlert = { text: '', sub: '', alpha: 0, scale: 1 };
+
+    const ROPE_SEGMENTS = 28;
+    const ropePointsBuffer = Array.from({ length: ROPE_SEGMENTS + 1 }, () => ({ x: 0, y: 0, z: 0, scale: 1 }));
+
+    bestScore = parseInt(localStorage.getItem('jump_rope_cat_hiscore') || '0', 10);
+    bestText.innerText = `(BEST: ${bestScore})`;
+
+    for (let i = 0; i < 40; i++) {
+      backgroundStars.push({
+        x: Math.random() * 360,
+        y: Math.random() * GROUND_Y,
+        size: Math.random() * 2 + 1,
+        blinkSpeed: Math.random() * 0.05 + 0.02
+      });
+    }
+
+    for (let i = 0; i < 45; i++) {
+      warpStars.push({
+        x: Math.random() * 360,
+        y: Math.random() * 380,
+        length: Math.random() * 30 + 15,
+        speed: Math.random() * 10 + 12,
+        color: Math.random() < 0.33 ? '#00ffff' : (Math.random() < 0.66 ? '#ff00ff' : '#ffee00')
+      });
+    }
+
+    const animalTypes = ['RABBIT', 'CAT', 'BEAR', 'DOG'];
+    for (let i = 0; i < 6; i++) {
+      astroAnimals.push({
+        type: animalTypes[i % animalTypes.length],
+        x: Math.random() * 300 + 30,
+        y: Math.random() * 220 + 20,
+        vx: (Math.random() - 0.5) * 1.2,
+        vy: (Math.random() - 0.5) * 0.8,
+        angle: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.03,
+        scale: Math.random() * 0.4 + 0.85
+      });
+    }
+
+    function triggerHaptic(pattern) {
+      if (typeof window !== 'undefined' && 'navigator' in window && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate(pattern); } catch (e) {}
+      }
+    }
+
+    let audioCtx = null;
+    let bgmTimer = null;
+    let bgmStep = 0;
+
+    const bgmNotes = [
+      261.63, 0, 329.63, 0, 392.00, 0, 523.25, 392.00,
+      349.23, 0, 440.00, 0, 392.00, 0, 329.63, 0
+    ];
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        startBGM();
+      }
+    }
+
+    function getBpmInterval() {
+      const stageBPM = [0, 115, 125, 138, 150, 165, 178, 190];
+      const bpm = stageBPM[stageLevel] || 115;
+      return (60 / bpm / 4) * 1000;
+    }
+
+    function startBGM() {
+      if (bgmTimer) clearTimeout(bgmTimer);
+      function stepBgm() {
+        if (isGameStarted && !isGameOver && !isPaused && !isCountingDown && audioCtx) {
+          const freq = bgmNotes[bgmStep % bgmNotes.length];
+          if (freq > 0) {
+            playSynth(freq * (stageLevel === 7 ? 0.75 : 0.5), 'triangle', 0.05, 0.035);
+            if (bgmStep % 4 === 0) {
+              playSynth(freq * (stageLevel === 7 ? 1.5 : 1.0), 'square', 0.035, 0.03);
+            }
+          }
+          bgmStep++;
+        }
+        bgmTimer = setTimeout(stepBgm, getBpmInterval());
+      }
+      stepBgm();
+    }
+
+    const scaleFreqs = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 783.99, 880.00];
+
+    function playComboSound(c, isPerfect) {
+      if (!audioCtx) return;
+      const freq = scaleFreqs[c % scaleFreqs.length] * (1 + Math.floor(c / scaleFreqs.length) * 0.25);
+      playSynth(freq, isPerfect ? 'square' : 'triangle', 0.12, isPerfect ? 0.18 : 0.12);
+    }
+
+    function playLevelUpFanfare() {
+      if (!audioCtx) return;
+      [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, idx) => {
+        setTimeout(() => playSynth(f, 'square', 0.12, 0.2), idx * 50);
+      });
+    }
+
+    function playCountSound(isFinal) {
+      if (!audioCtx) return;
+      playSynth(isFinal ? 880 : 440, 'square', 0.12, 0.2);
+    }
+
+    function playWhipSound() {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(stageLevel === 7 ? 400 : 250, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.035);
+        gain.gain.setValueAtTime(0.09, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.035);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.035);
+      } catch(e) {}
+    }
+
+    function playCrashBoom() {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.28, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch(e) {}
+    }
+
+    function playSynth(freq, type, duration, vol = 0.12) {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function soundJump() { playSynth(460, 'square', 0.05, 0.08); }
+    function soundFail() { playSynth(110, 'sawtooth', 0.35, 0.3); }
+
+    function togglePause(e) {
+      if (e) e.stopPropagation();
+      if (!isGameStarted || isGameOver || isCountingDown) return;
+      isPaused = !isPaused;
+      pauseBtn.innerText = isPaused ? "RESUME" : "PAUSE";
+      pauseBtn.style.background = isPaused ? "#ffaa00" : "var(--pause-btn-bg)";
+    }
+
+    function selectGameMode(mode) {
+      selectedMode = mode;
+      document.getElementById('mode-normal').classList.toggle('active', mode === 'NORMAL');
+      document.getElementById('mode-infinity').classList.toggle('active', mode === 'INFINITY');
+      resetGame();
+    }
+
+    function setActionButtonState(state) {
+      if (state === 'RETRY') {
+        actionBtn.classList.add('retry-mode');
+        actionBtnTitle.innerText = "🔄 다시 도전하기 (RETRY)";
+        actionBtnSub.innerText = "탭하여 바로 재시작 / Space";
+      } else {
+        actionBtn.classList.remove('retry-mode');
+        actionBtnTitle.innerText = "점프! (JUMP)";
+        actionBtnSub.innerText = "탭: 소점프 / 롱홀드: 대점프 / Space";
+      }
+    }
+
+    function setBackgroundInteractable(interactable) {
+      if (interactable) {
+        document.body.classList.remove('modal-open');
+        actionBtn.disabled = false;
+        pauseBtn.disabled = false;
+        document.querySelectorAll('.mode-btn, .leaderboard-btn').forEach(b => b.disabled = false);
+      } else {
+        document.body.classList.add('modal-open');
+        actionBtn.disabled = true;
+        pauseBtn.disabled = true;
+        document.querySelectorAll('.mode-btn, .leaderboard-btn').forEach(b => b.disabled = true);
+      }
+    }
+
+    function resetGame() {
+      score = 0;
+      combo = 0;
+      maxCombo = 0;
+      isGameOver = false;
+      isWaitingRestart = false;
+      isPaused = false;
+
+      setBackgroundInteractable(true);
+      resultModal.style.display = 'none';
+      leaderboardModal.style.display = 'none';
+      setActionButtonState('JUMP');
+
+      phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
+      pauseBtn.innerText = "PAUSE";
+      pauseBtn.style.background = "var(--pause-btn-bg)";
+      ropeAngle = 0;
+      ropeDirection = 1;
+      currentPattern = 'NORMAL';
+      patternTimer = 0;
+      
+      baseSpeed = 0.085;
+      currentSpeed = baseSpeed;
+      ropePassed = false;
+      hasWhipSoundPlayed = false;
+      player.y = GROUND_Y;
+      player.vy = 0;
+      player.scaleX = 1;
+      player.scaleY = 1;
+      player.isGrounded = true;
+      player.isHoldingJump = false;
+      player.jumpHoldFrames = 0;
+
+      shakeAmount = 0;
+      floatingTexts.length = 0;
+      particles.length = 0;
+      fireworks.length = 0;
+      magmaParticles.length = 0;
+      spaceships.length = 0;
+      crashingShip = null;
+      glassCracks.length = 0;
+      comboPopup.alpha = 0;
+      stageAlert.alpha = 0;
+
+      if (selectedMode === 'INFINITY') {
+        stageLevel = 7;
+        phoneFrame.classList.add('infinity-frame');
+      } else {
+        stageLevel = 1;
+      }
+
+      updateUI();
+      startCountdown();
+    }
+
+    function startCountdown() {
+      isCountingDown = true;
+      isGameStarted = true;
+      countdownValue = 3;
+      countdownScale = 2.8;
+      
+      initAudio();
+      playCountSound(false);
+      triggerHaptic(40);
+
+      const countInterval = setInterval(() => {
+        countdownValue--;
+        countdownScale = 2.8;
+
+        if (countdownValue > 0) {
+          playCountSound(false);
+          triggerHaptic(40);
+        } else if (countdownValue === 0) {
+          playCountSound(true);
+          triggerHaptic([60, 40, 80]);
+        } else {
+          clearInterval(countInterval);
+          isCountingDown = false;
+        }
+      }, 1000);
+    }
+
+    function isAnyModalOpen() {
+      return resultModal.style.display === 'flex' || leaderboardModal.style.display === 'flex';
+    }
+
+    function handleActionButtonClick() {
+      if (isAnyModalOpen()) return;
+      if (isGameOver || isWaitingRestart || !isGameStarted) {
+        resetGame();
+      }
+    }
+
+    function handleJumpStart(e) {
+      if (isAnyModalOpen()) return;
+      if (e && e.cancelable && e.type.startsWith('touch')) e.preventDefault();
+      if (isPaused || isCountingDown) return;
+      initAudio();
+
+      if (!isGameStarted || isGameOver || isWaitingRestart) {
+        resetGame();
+        return;
+      }
+
+      if (player.isGrounded) {
+        player.vy = player.baseJumpForce;
+        player.isGrounded = false;
+        player.isHoldingJump = true;
+        player.jumpHoldFrames = 0;
+        player.scaleX = 0.75;
+        player.scaleY = 1.30;
+        soundJump();
+        triggerHaptic(15);
+        createParticles(player.x, GROUND_Y, stageLevel === 7 ? '#00ffff' : '#eee', 4);
+      }
+    }
+
+    function handleJumpEnd(e) {
+      if (isAnyModalOpen()) return;
+      if (e && e.cancelable && e.type.startsWith('touch')) e.preventDefault();
+      player.isHoldingJump = false;
+      if (player.vy < -2.2) {
+        player.vy *= 0.42;
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (isAnyModalOpen()) return;
+      if (e.repeat) return;
+      if (e.code === 'KeyP') togglePause();
+      else if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        handleJumpStart(e);
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (isAnyModalOpen()) return;
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        handleJumpEnd(e);
+      }
+    });
+
+    canvas.addEventListener('touchstart', handleJumpStart, { passive: false });
+    canvas.addEventListener('touchend', handleJumpEnd, { passive: false });
+    canvas.addEventListener('mousedown', handleJumpStart);
+    canvas.addEventListener('mouseup', handleJumpEnd);
+
+    actionBtn.addEventListener('touchstart', (e) => {
+      if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpStart(e);
+    }, { passive: false });
+    actionBtn.addEventListener('touchend', (e) => {
+      if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpEnd(e);
+    }, { passive: false });
+    actionBtn.addEventListener('mousedown', (e) => {
+      if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpStart(e);
+    });
+    actionBtn.addEventListener('mouseup', (e) => {
+      if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpEnd(e);
+    });
+    actionBtn.addEventListener('mouseleave', handleJumpEnd);
+
+    function showGameOverScreen() {
+      isGameOver = true;
+      shakeAmount = 0;
+      phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
+      soundFail();
+      triggerHaptic(280);
+      addFloatingText("💥 MISS!!", player.x, player.y - 20, '#ff3333', 24);
+
+      if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('jump_rope_cat_hiscore', bestScore);
+        bestText.innerText = `(BEST: ${bestScore})`;
+      }
+
+      // 연타 실수 방지를 위해 350ms 후 모달 표시
+      setTimeout(() => {
+        modalScoreVal.innerText = score;
+        modalSubVal.innerText = `STAGE ${stageLevel} / ${maxCombo}콤보`;
+        nicknameInput.value = localStorage.getItem('jump_rope_cat_last_nick') || '';
+        setBackgroundInteractable(false);
+        resultModal.style.display = 'flex';
+        nicknameInput.focus();
+      }, 350);
+    }
+
+    function skipAndReadyRestart() {
+      resultModal.style.display = 'none';
+      setBackgroundInteractable(true);
+      isWaitingRestart = true;
+      setActionButtonState('RETRY');
+    }
+
+    async function submitScoreToLeaderboard() {
+      const nick = nicknameInput.value.trim() || '익명냥이';
+      localStorage.setItem('jump_rope_cat_last_nick', nick);
+      const submitBtn = document.getElementById('submitScoreBtn');
+      submitBtn.innerText = '저장 중...';
+      submitBtn.disabled = true;
+
+      const record = {
+        nickname: nick,
+        score: score,
+        stage: stageLevel,
+        combo: maxCombo
+      };
+
+      try {
+        if (GOOGLE_SHEET_API_URL && !GOOGLE_SHEET_API_URL.includes("여기에_")) {
+          await fetch(GOOGLE_SHEET_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+          });
+        }
+      } catch (err) {
+        console.warn('Online sync failed:', err);
+      }
+
+      saveLocalRecord(record);
+      submitBtn.innerText = '기록 등록';
+      submitBtn.disabled = false;
+      resultModal.style.display = 'none';
+      openLeaderboardModal();
+    }
+
+    function saveLocalRecord(record) {
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem('jump_rope_cat_scores')) || [];
+      } catch (e) { records = []; }
+      records.push(record);
+      records.sort((a, b) => b.score - a.score);
+      localStorage.setItem('jump_rope_cat_scores', JSON.stringify(records.slice(0, 15)));
+    }
+
+    function getLocalRecords() {
+      try {
+        return JSON.parse(localStorage.getItem('jump_rope_cat_scores')) || [];
+      } catch (e) { return []; }
+    }
+
+    async function openLeaderboardModal() {
+      setBackgroundInteractable(false);
+      leaderboardModal.style.display = 'flex';
+      leaderboardList.innerHTML = '<li class="leaderboard-item" style="justify-content: center;">불러오는 중...</li>';
+      syncStatus.innerText = '';
+
+      let records = [];
+      let isOnline = false;
+
+      if (GOOGLE_SHEET_API_URL && !GOOGLE_SHEET_API_URL.includes("여기에_")) {
+        try {
+          const res = await fetch(GOOGLE_SHEET_API_URL);
+          if (res.ok) {
+            records = await res.json();
+            isOnline = true;
+          }
+        } catch (e) {
+          console.warn('Sheets fetch error, fallback to local:', e);
+        }
+      }
+
+      if (!isOnline || records.length === 0) {
+        records = getLocalRecords();
+        syncStatus.innerText = isOnline ? '등록된 기록 없음' : '동기화 실패 (로컬 기록 표시)';
+      } else {
+        syncStatus.innerText = '⚡ 구글 시트 실시간 연동 완료';
+      }
+
+      if (records.length === 0) {
+        leaderboardList.innerHTML = '<li class="leaderboard-item" style="justify-content: center;">기록이 없습니다.</li>';
+        return;
+      }
+
+      leaderboardList.innerHTML = '';
+      records.slice(0, 15).forEach((r, idx) => {
+        const li = document.createElement('li');
+        li.className = `leaderboard-item ${idx === 0 ? 'rank-1' : ''}`;
+        const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `${idx + 1}위`));
+        li.innerHTML = `
+          <div><span style="font-weight:bold; width:34px; display:inline-block;">${medal}</span> ${escapeHtml(r.nickname || '익명')}</div>
+          <div><span style="color:#ffee00; font-weight:bold; font-size:13px;">${r.score}점</span> <span style="font-size:10px; color:#66ffcc;">STAGE ${r.stage || 1} / ${r.combo || 0}콤보</span></div>
+        `;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function closeLeaderboardModal() {
+      leaderboardModal.style.display = 'none';
+      setBackgroundInteractable(true);
+      if (isGameOver) {
+        isWaitingRestart = true;
+        setActionButtonState('RETRY');
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    function update(dt) {
+      if (!isGameStarted || isGameOver || isPaused || isCountingDown || isWaitingRestart) return;
+
+      if (player.isHoldingJump && player.vy < 0 && player.jumpHoldFrames < player.maxHoldFrames) {
+        player.vy -= 0.65 * dt;
+        player.jumpHoldFrames++;
+        player.scaleY = Math.min(1.48, 1.25 + (player.jumpHoldFrames * 0.022));
+      }
+
+      player.y += player.vy * dt;
+      player.vy += player.gravity * dt;
+
+      player.scaleX += (1 - player.scaleX) * 0.2 * dt;
+      player.scaleY += (1 - player.scaleY) * 0.2 * dt;
+
+      if (player.y >= GROUND_Y) {
+        if (!player.isGrounded) {
+          player.scaleX = 1.45;
+          player.scaleY = 0.65;
+          const dustColor = stageLevel === 7 ? '#00ffff' : (stageLevel >= 4 ? '#bb66ff' : '#387320');
+          createParticles(player.x, GROUND_Y, dustColor, 5);
+        }
+        player.y = GROUND_Y;
+        player.vy = 0;
+        player.isGrounded = true;
+        player.isHoldingJump = false;
+      }
+
+      baseSpeed = 0.085 + Math.min(0.045, (score * 0.0012));
+      let whipMultiplier = 0.88 + (1 - Math.cos(ropeAngle)) * 0.32;
+
+      if (stageLevel === 7) {
+        patternTimer += 0.02 * dt;
+        if (currentPattern === 'BRAKE_SNAP') {
+          whipMultiplier *= (ropeAngle < Math.PI * 0.8) ? 0.6 : 1.4;
+        } else if (currentPattern === 'DOUBLE_QUICK') {
+          whipMultiplier *= 1.30;
+        }
+
+        if (ropePassed && Math.random() < 0.035) {
+          const patterns = ['REVERSE', 'BRAKE_SNAP', 'DOUBLE_QUICK', 'NORMAL'];
+          const picked = patterns[Math.floor(Math.random() * patterns.length)];
+          if (picked !== currentPattern) {
+            currentPattern = picked;
+            if (currentPattern === 'REVERSE') {
+              ropeDirection *= -1;
+              addFloatingText("⚡ REVERSE!!", 180, 140, '#ff00ff', 18);
+              shakeAmount = 6;
+              triggerHaptic([30, 40, 50]);
+            } else if (currentPattern === 'BRAKE_SNAP') {
+              addFloatingText("🛑 FAKE SLOW!", 180, 140, '#ffee00', 18);
+            } else if (currentPattern === 'DOUBLE_QUICK') {
+              addFloatingText("💨 SPEED UP!", 180, 140, '#00ffff', 18);
+            }
+          }
+        }
+      }
+
+      currentSpeed = baseSpeed * whipMultiplier * ropeDirection;
+      ropeAngle += currentSpeed * dt;
+
+      if (ropeAngle >= Math.PI * 2) {
+        ropeAngle -= Math.PI * 2;
+        ropePassed = false;
+        hasWhipSoundPlayed = false;
+      } else if (ropeAngle < 0) {
+        ropeAngle += Math.PI * 2;
+        ropePassed = false;
+        hasWhipSoundPlayed = false;
+      }
+
+      if (ropeAngle > Math.PI - 0.28 && ropeAngle < Math.PI + 0.28 && !hasWhipSoundPlayed) {
+        hasWhipSoundPlayed = true;
+        playWhipSound();
+        const hitColor = stageLevel === 7 ? '#00ffff' : (stageLevel === 6 ? '#ff4400' : '#d0b080');
+        createParticles(canvas.width / 2, GROUND_Y - 2, hitColor, 5);
+      }
+
+      const isRopeAtBottom = (ropeAngle > Math.PI - 0.32 && ropeAngle < Math.PI + 0.32);
+
+      if (isRopeAtBottom && !ropePassed) {
+        const jumpHeight = GROUND_Y - player.y;
+
+        if (jumpHeight < 14) {
+          showGameOverScreen();
+        } else {
+          ropePassed = true;
+          combo++;
+          if (combo > maxCombo) maxCombo = combo;
+
+          let earnedScore = 1;
+          let judgmentText = "GOOD";
+          let judgmentColor = "#ffffff";
+          let isPerfect = false;
+
+          if (jumpHeight <= 26) {
+            earnedScore = 3;
+            judgmentText = "PERFECT!!!";
+            judgmentColor = "#ffee00";
+            shakeAmount = 4;
+            isPerfect = true;
+            triggerHaptic([25, 30, 45]);
+            createParticles(player.x, player.y, '#ffee00', 10);
+          } else if (jumpHeight <= 48) {
+            earnedScore = 2;
+            judgmentText = "GREAT!!";
+            judgmentColor = "#66ffcc";
+            shakeAmount = 2;
+            triggerHaptic(30);
+            createParticles(player.x, player.y, '#66ffcc', 6);
+          } else {
+            earnedScore = 1;
+            judgmentText = "GOOD";
+            judgmentColor = "#ffffff";
+            triggerHaptic(20);
+            createParticles(player.x, player.y, '#ffffff', 4);
+          }
+
+          score += earnedScore;
+          playComboSound(combo, isPerfect);
+          addFloatingText(judgmentText, player.x, player.y - 30, judgmentColor, isPerfect ? 20 : 16);
+          triggerComboPopup(combo, judgmentColor);
+
+          if (selectedMode === 'NORMAL') {
+            checkStageProgression();
+          }
+          updateUI();
+        }
+      }
+
+      updateStageAmbience(dt);
+      updateEffects(dt);
+    }
+
+    function checkStageProgression() {
+      let newStage = 1;
+      if (score >= 30) newStage = 7;
+      else if (score >= 25) newStage = 6;
+      else if (score >= 20) newStage = 5;
+      else if (score >= 15) newStage = 4;
+      else if (score >= 10) newStage = 3;
+      else if (score >= 5) newStage = 2;
+
+      if (newStage > stageLevel) {
+        stageLevel = newStage;
+        shakeAmount = 10;
+        playLevelUpFanfare();
+        triggerHaptic([50, 40, 50, 40, 90]);
+
+        phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
+        if (stageLevel === 6) phoneFrame.classList.add('supernova-frame');
+        if (stageLevel === 7) phoneFrame.classList.add('infinity-frame');
+
+        const titles = ["", "STAGE 1: DAY", "STAGE 2: SUNSET", "STAGE 3: NIGHT", "STAGE 4: SPACE", "STAGE 5: FIREWORKS!", "STAGE 6: SUPERNOVA 🔥", "STAGE 7: INFINITY 🌌"];
+        const subs = ["", "맑은 하늘", "황혼의 노을", "별이 빛나는 밤", "우주 진입!", "축제 폭죽!", "초신성 폭발!", "화면 충돌 카오스!"];
+        triggerStageAlert(titles[stageLevel], subs[stageLevel]);
+      }
+    }
+
+    function triggerStageAlert(text, sub) {
+      stageAlert.text = text;
+      stageAlert.sub = sub;
+      stageAlert.scale = 2.2;
+      stageAlert.alpha = 1.0;
+    }
+
+    function triggerComboPopup(c, color) {
+      comboPopup.text = `${c} COMBO!`;
+      comboPopup.color = color;
+      comboPopup.scale = 2.2;
+      comboPopup.alpha = 1.0;
+    }
+
+    function updateStageAmbience(dt) {
+      if (stageLevel === 5 && Math.random() < 0.12) {
+        spawnFirework(Math.random() * 320 + 20, Math.random() * 140 + 30);
+      }
+      if (stageLevel === 6) {
+        if (Math.random() < 0.22) spawnFirework(Math.random() * 320 + 20, Math.random() * 120 + 20);
+        if (Math.random() < 0.4) {
+          magmaParticles.push({
+            x: Math.random() * 360,
+            y: GROUND_Y,
+            vx: (Math.random() - 0.5) * 5,
+            vy: -Math.random() * 8 - 4,
+            color: Math.random() < 0.5 ? '#ff3300' : '#ffcc00',
+            size: Math.random() * 4 + 2,
+            alpha: 1
+          });
+        }
+      }
+
+      if (stageLevel === 7) {
+        for (let i = 0; i < warpStars.length; i++) {
+          const s = warpStars[i];
+          s.y += s.speed * dt;
+          if (s.y > 380) {
+            s.y = -s.length;
+            s.x = Math.random() * 360;
+          }
+        }
+
+        for (let i = 0; i < astroAnimals.length; i++) {
+          const a = astroAnimals[i];
+          a.x += a.vx * dt;
+          a.y += a.vy * dt;
+          a.angle += a.vRot * dt;
+          if (a.x < -40) a.x = 400;
+          if (a.x > 400) a.x = -40;
+          if (a.y < -40) a.y = 350;
+          if (a.y > 350) a.y = -40;
+        }
+
+        if (!isCountingDown && Math.random() < 0.035 && spaceships.length < 3) {
+          const fromLeft = Math.random() < 0.5;
+          spaceships.push({
+            x: fromLeft ? -50 : 410,
+            y: Math.random() * 200 + 30,
+            vx: (fromLeft ? 1 : -1) * (Math.random() * 5 + 5),
+            vy: (Math.random() - 0.5) * 1.5,
+            type: Math.random() < 0.5 ? 'ROCKET' : 'UFO',
+            color: Math.random() < 0.5 ? '#00ffff' : '#ff00ff'
+          });
+        }
+
+        for (let i = spaceships.length - 1; i >= 0; i--) {
+          const s = spaceships[i];
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          if (s.x < -60 || s.x > 420) spaceships.splice(i, 1);
+        }
+
+        if (!isCountingDown && !crashingShip && Math.random() < 0.012) {
+          crashingShip = {
+            x: Math.random() * 200 + 80,
+            y: Math.random() * 160 + 60,
+            scale: 0.1,
+            maxScale: 3.2,
+            growSpeed: 0.06,
+            rot: 0
+          };
+        }
+
+        if (crashingShip) {
+          crashingShip.scale += crashingShip.growSpeed * dt;
+          crashingShip.rot += 0.04 * dt;
+
+          if (crashingShip.scale >= crashingShip.maxScale) {
+            shakeAmount = 16;
+            playCrashBoom();
+            triggerHaptic([90, 35, 100]);
+
+            glassCracks.push({
+              x: crashingShip.x,
+              y: crashingShip.y,
+              alpha: 1.0,
+              branches: generateCrackBranches()
+            });
+
+            createParticles(crashingShip.x, crashingShip.y, '#ff3300', 14);
+            createParticles(crashingShip.x, crashingShip.y, '#00ffff', 12);
+            addFloatingText("💥 CRASH!!", crashingShip.x, crashingShip.y, '#ff0055', 22);
+
+            crashingShip = null;
+          }
+        }
+
+        for (let i = glassCracks.length - 1; i >= 0; i--) {
+          glassCracks[i].alpha -= 0.012 * dt;
+          if (glassCracks[i].alpha <= 0) glassCracks.splice(i, 1);
+        }
+      }
+
+      for (let i = fireworks.length - 1; i >= 0; i--) {
+        const f = fireworks[i];
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+        f.vy += 0.08 * dt;
+        f.alpha -= 0.025 * dt;
+        if (f.alpha <= 0) fireworks.splice(i, 1);
+      }
+
+      for (let i = magmaParticles.length - 1; i >= 0; i--) {
+        const m = magmaParticles[i];
+        m.x += m.vx * dt;
+        m.y += m.vy * dt;
+        m.vy += 0.22 * dt;
+        m.alpha -= 0.03 * dt;
+        if (m.alpha <= 0) magmaParticles.splice(i, 1);
+      }
+    }
+
+    function generateCrackBranches() {
+      const branches = [];
+      const numLines = Math.floor(Math.random() * 4) + 6;
+      for (let i = 0; i < numLines; i++) {
+        const ang = (Math.PI * 2 / numLines) * i + (Math.random() - 0.5) * 0.4;
+        const len = Math.random() * 50 + 35;
+        branches.push({ dx: Math.cos(ang) * len, dy: Math.sin(ang) * len });
+      }
+      return branches;
+    }
+
+    function spawnFirework(x, y) {
+      const colors = ['#ff3366', '#33ffcc', '#ffee00', '#ff99ff', '#33ccff'];
+      const col = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 16; i++) {
+        const ang = (Math.PI * 2 / 16) * i;
+        const spd = Math.random() * 3.5 + 2;
+        fireworks.push({
+          x, y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          color: col,
+          alpha: 1,
+          size: Math.random() * 3 + 2
+        });
+      }
+    }
+
+    function updateEffects(dt) {
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const t = floatingTexts[i];
+        t.y += t.vy * dt;
+        t.alpha -= 0.025 * dt;
+        if (t.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.alpha -= 0.035 * dt;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      if (comboPopup.alpha > 0) {
+        comboPopup.scale += (1.0 - comboPopup.scale) * 0.25 * dt;
+        comboPopup.alpha -= 0.022 * dt;
+      }
+
+      if (stageAlert.alpha > 0) {
+        stageAlert.scale += (1.0 - stageAlert.scale) * 0.18 * dt;
+        stageAlert.alpha -= 0.015 * dt;
+      }
+
+      if (shakeAmount > 0) shakeAmount *= Math.pow(0.85, dt);
+      if (shakeAmount < 0.5) shakeAmount = 0;
+    }
+
+    function addFloatingText(text, x, y, color, size = 16) {
+      floatingTexts.push({ text, x, y, vy: -2.4, alpha: 1, color, size });
+    }
+
+    function createParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.8) * 6,
+          color,
+          alpha: 1,
+          size: Math.random() * 4 + 3
+        });
+      }
+    }
+
+    function updateUI() {
+      scoreText.innerText = score;
+      bestText.innerText = `(BEST: ${bestScore})`;
+      const stageNames = ["", "STAGE 1: DAY", "STAGE 2: SUNSET", "STAGE 3: NIGHT", "STAGE 4: SPACE", "STAGE 5: FIREWORKS!", "STAGE 6: SUPERNOVA 🔥", "STAGE 7: INFINITY 🌌"];
+      stageBadge.innerText = stageNames[stageLevel];
+      
+      if (stageLevel === 7) stageBadge.style.color = '#00ffff';
+      else if (stageLevel === 6) stageBadge.style.color = '#ff4400';
+      else if (stageLevel >= 4) stageBadge.style.color = '#ff99ff';
+      else if (stageLevel === 2) stageBadge.style.color = '#ffbb44';
+      else stageBadge.style.color = '#66ffcc';
+    }
+
+    function update3DRopePoints() {
+      const rotY = Math.cos(ropeAngle - Math.PI);
+      const rotZ = -Math.sin(ropeAngle - Math.PI);
+      const topRadius = 120;
+      const maxBottomRadius = (GROUND_Y - LEFT_HAND.y);
+
+      for (let i = 0; i <= ROPE_SEGMENTS; i++) {
+        const t = i / ROPE_SEGMENTS;
+        const curveWeight = Math.sin(t * Math.PI);
+        const wx = LEFT_HAND.x + (RIGHT_HAND.x - LEFT_HAND.x) * t;
+
+        let radiusY = (rotY > 0) ? maxBottomRadius : topRadius;
+        let wy = LEFT_HAND.y + (rotY * radiusY * curveWeight);
+        if (wy > GROUND_Y - 2) wy = GROUND_Y - 2;
+
+        const maxZDepth = 90;
+        const wz = rotZ * maxZDepth * curveWeight;
+        const scale = 1.0 + (wz / 200);
+
+        const centerX = 180;
+        const centerY = GROUND_Y - 45;
+
+        const p = ropePointsBuffer[i];
+        p.x = centerX + (wx - centerX) * scale;
+        p.y = centerY + (wy - centerY) * scale;
+        p.z = wz;
+        p.scale = scale;
+      }
+      return ropePointsBuffer;
+    }
+
+    function draw() {
+      ctx.save();
+
+      let totalShake = isGameOver ? 0 : shakeAmount;
+      if (!isGameOver && stageLevel === 7 && isGameStarted && !isPaused && !isCountingDown) {
+        totalShake = Math.max(totalShake, 2.5);
+      } else if (!isGameOver && stageLevel === 6 && isGameStarted && !isPaused) {
+        totalShake = Math.max(totalShake, 1.8);
+      }
+
+      if (totalShake > 0) {
+        const sx = (Math.random() - 0.5) * totalShake;
+        const sy = (Math.random() - 0.5) * totalShake;
+        ctx.translate(sx, sy);
+      }
+
+      drawDynamicBackground();
+
+      if (stageLevel === 7) {
+        for (let i = 0; i < astroAnimals.length; i++) drawAstroAnimal(astroAnimals[i]);
+        for (let i = 0; i < spaceships.length; i++) drawSpaceship(spaceships[i]);
+      }
+
+      if (crashingShip && !isGameOver) {
+        drawCrashingSpaceship(crashingShip);
+      }
+
+      if (stageLevel === 6 && isGameStarted && !isGameOver && !isPaused) {
+        const redPulse = 0.12 + 0.1 * Math.sin(Date.now() * 0.015);
+        ctx.fillStyle = `rgba(255, 30, 0, ${redPulse})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (stageLevel === 7 && isGameStarted && !isGameOver && !isPaused && !isCountingDown) {
+        const neonPulse = 0.09 + 0.07 * Math.sin(Date.now() * 0.025);
+        ctx.fillStyle = `rgba(0, 255, 255, ${neonPulse})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      drawTurner(LEFT_HAND.x, GROUND_Y, true);
+      drawTurner(RIGHT_HAND.x, GROUND_Y, false);
+
+      const ropePoints = update3DRopePoints();
+      const centerZ = ropePoints[Math.floor(ROPE_SEGMENTS / 2)].z;
+      const ropeBehind = centerZ < 0;
+
+      if (ropeBehind) render3DRope(ropePoints);
+      drawJuicyPlayer(player.x, player.y, player.scaleX, player.scaleY);
+      if (!ropeBehind) render3DRope(ropePoints);
+
+      if (glassCracks.length > 0) {
+        for (let i = 0; i < glassCracks.length; i++) {
+          const g = glassCracks[i];
+          ctx.strokeStyle = `rgba(255, 255, 255, ${g.alpha})`;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          for (let j = 0; j < g.branches.length; j++) {
+            const b = g.branches[j];
+            ctx.moveTo(g.x, g.y);
+            ctx.lineTo(g.x + b.dx, g.y + b.dy);
+          }
+          ctx.stroke();
+        }
+      }
+
+      for (let i = 0; i < fireworks.length; i++) {
+        const f = fireworks[i];
+        ctx.fillStyle = f.color;
+        ctx.globalAlpha = f.alpha;
+        ctx.fillRect(f.x, f.y, f.size, f.size);
+      }
+      for (let i = 0; i < magmaParticles.length; i++) {
+        const m = magmaParticles[i];
+        ctx.fillStyle = m.color;
+        ctx.globalAlpha = m.alpha;
+        ctx.fillRect(m.x, m.y, m.size, m.size);
+      }
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+      }
+      ctx.globalAlpha = 1;
+
+      if (comboPopup.alpha > 0 && combo > 0) {
+        ctx.save();
+        ctx.translate(canvas.width / 2, 110);
+        ctx.scale(comboPopup.scale, comboPopup.scale);
+        ctx.globalAlpha = comboPopup.alpha;
+        ctx.font = '900 28px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#000';
+        ctx.fillText(comboPopup.text, 2, 2);
+        ctx.fillStyle = comboPopup.color;
+        ctx.fillText(comboPopup.text, 0, 0);
+        ctx.restore();
+      }
+
+      if (stageAlert.alpha > 0) {
+        ctx.save();
+        ctx.translate(canvas.width / 2, 70);
+        ctx.scale(stageAlert.scale, stageAlert.scale);
+        ctx.globalAlpha = stageAlert.alpha;
+        ctx.font = '900 24px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#000';
+        ctx.fillText(stageAlert.text, 2, 2);
+        ctx.fillStyle = (stageLevel === 7) ? '#00ffff' : '#ffee00';
+        ctx.fillText(stageAlert.text, 0, 0);
+        ctx.font = 'bold 13px Courier New';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(stageAlert.sub, 0, 24);
+        ctx.restore();
+      }
+
+      for (let i = 0; i < floatingTexts.length; i++) {
+        const t = floatingTexts[i];
+        ctx.save();
+        ctx.globalAlpha = t.alpha;
+        ctx.font = `900 ${t.size}px Courier New`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#000';
+        ctx.fillText(t.text, t.x + 1, t.y + 1);
+        ctx.fillStyle = t.color;
+        ctx.fillText(t.text, t.x, t.y);
+        ctx.restore();
+      }
+
+      if (isCountingDown) {
+        drawCountdownOverlay();
+      } else if (!isGameStarted) {
+        drawOverlay("넘어넘어: CAT JUMP", "하단 점프 버튼 또는 화면 터치로 시작!");
+      } else if (isWaitingRestart) {
+        drawOverlay("READY TO RETRY?", "화면 터치 또는 하단 버튼을 눌러 재도전");
+      } else if (isPaused) {
+        drawOverlay("⏸️ PAUSED", "일시정지 중\nPAUSE 버튼을 눌러 재개");
+      }
+
+      ctx.restore();
+    }
+
+    let lastFrameTime = performance.now();
+    function gameLoop(currentTime) {
+      const deltaMs = currentTime - lastFrameTime;
+      lastFrameTime = currentTime;
+      const dt = Math.min(1.5, Math.max(0.5, deltaMs / 16.667));
+
+      update(dt);
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawCountdownOverlay() {
+      countdownScale += (1.0 - countdownScale) * 0.15;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(countdownScale, countdownScale);
+      ctx.font = '900 54px Courier New';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const displayText = countdownValue > 0 ? `${countdownValue}` : "START!!";
+      const displayColor = (stageLevel === 7) 
+        ? (countdownValue > 0 ? "#00ffff" : "#ff00ff") 
+        : (countdownValue > 0 ? "#ffee00" : "#33ff66");
+
+      ctx.fillStyle = '#000';
+      ctx.fillText(displayText, 3, 3);
+      ctx.fillStyle = displayColor;
+      ctx.fillText(displayText, 0, 0);
+      ctx.restore();
+    }
+
+    function drawDynamicBackground() {
+      let skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      let groundColor = '#449e22';
+      let groundBorder = '#2d6e15';
+
+      if (stageLevel === 1) {
+        skyGrad.addColorStop(0, '#5cb8ff'); skyGrad.addColorStop(1, '#a6ddff');
+        groundColor = '#449e22'; groundBorder = '#2d6e15';
+      } else if (stageLevel === 2) {
+        skyGrad.addColorStop(0, '#e65c00'); skyGrad.addColorStop(0.6, '#f8981d'); skyGrad.addColorStop(1, '#fed136');
+        groundColor = '#5c6b1d'; groundBorder = '#3e4714';
+      } else if (stageLevel === 3) {
+        skyGrad.addColorStop(0, '#0a1128'); skyGrad.addColorStop(0.7, '#1c2541'); skyGrad.addColorStop(1, '#3a506b');
+        groundColor = '#1e3820'; groundBorder = '#122414';
+      } else if (stageLevel === 4) {
+        skyGrad.addColorStop(0, '#05021a'); skyGrad.addColorStop(0.5, '#2b0938'); skyGrad.addColorStop(1, '#571064');
+        groundColor = '#241030'; groundBorder = '#421659';
+      } else if (stageLevel === 5) {
+        skyGrad.addColorStop(0, '#0f051d'); skyGrad.addColorStop(1, '#1b1035');
+        groundColor = '#201830'; groundBorder = '#553377';
+      } else if (stageLevel === 6) {
+        skyGrad.addColorStop(0, '#380000'); skyGrad.addColorStop(0.5, '#7a0900'); skyGrad.addColorStop(1, '#d13400');
+        groundColor = '#260a0a'; groundBorder = '#691515';
+      } else {
+        skyGrad.addColorStop(0, '#000000'); skyGrad.addColorStop(1, '#020208');
+      }
+
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, stageLevel === 7 ? canvas.height : GROUND_Y);
+
+      if (stageLevel >= 3 && stageLevel <= 6) {
+        for (let i = 0; i < backgroundStars.length; i++) {
+          const s = backgroundStars[i];
+          ctx.fillStyle = stageLevel === 6 ? '#ffaa44' : '#ffffff';
+          ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(Date.now() * s.blinkSpeed));
+          ctx.fillRect(s.x, s.y, s.size, s.size);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      if (stageLevel === 7) {
+        for (let i = 0; i < warpStars.length; i++) {
+          const w = warpStars[i];
+          ctx.strokeStyle = w.color;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(w.x, w.y);
+          ctx.lineTo(w.x, w.y + w.length);
+          ctx.stroke();
+        }
+      }
+
+      if (stageLevel === 4) {
+        ctx.fillStyle = '#e0aaff';
+        ctx.beginPath();
+        ctx.arc(300, 70, 32, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (stageLevel === 6) {
+        const sunPulse = 48 + 4 * Math.sin(Date.now() * 0.008);
+        ctx.fillStyle = '#ff2200';
+        ctx.beginPath();
+        ctx.arc(180, 80, sunPulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (stageLevel < 7) {
+        ctx.fillStyle = groundColor;
+        ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+        ctx.strokeStyle = groundBorder;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND_Y);
+        ctx.lineTo(canvas.width, GROUND_Y);
+        ctx.stroke();
+      }
+    }
+
+    function drawSpaceship(s) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      if (s.vx < 0) ctx.scale(-1, 1);
+      if (s.type === 'ROCKET') {
+        ctx.fillStyle = '#e6e6e6';
+        ctx.fillRect(-12, -6, 24, 12);
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.moveTo(-12, -10); ctx.lineTo(-4, -6); ctx.lineTo(-12, -6); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-12, 10); ctx.lineTo(-4, 6); ctx.lineTo(-12, 6); ctx.fill();
+        ctx.fillStyle = '#ff6600';
+        ctx.fillRect(-18, -3, 6, 6);
+      } else {
+        ctx.fillStyle = '#00ffff';
+        ctx.beginPath();
+        ctx.arc(0, -3, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 2, 16, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawCrashingSpaceship(c) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(c.rot);
+      ctx.scale(c.scale, c.scale);
+      ctx.fillStyle = '#ff0055';
+      ctx.beginPath(); ctx.arc(0, -6, 12, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#00ffcc';
+      ctx.beginPath(); ctx.ellipse(0, 4, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath(); ctx.arc(-14, 4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 6, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(14, 4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawAstroAnimal(a) {
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.angle);
+      ctx.scale(a.scale, a.scale);
+      ctx.fillStyle = '#e6e6e6';
+      ctx.fillRect(-10, -8, 20, 20);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-10, -8, 20, 20);
+
+      if (a.type === 'RABBIT') {
+        ctx.fillStyle = '#ffb3ba'; ctx.fillRect(-8, -24, 4, 10); ctx.fillRect(4, -24, 4, 10);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -14, 16, 14);
+      } else if (a.type === 'CAT') {
+        ctx.fillStyle = '#ffdfba'; ctx.fillRect(-9, -18, 5, 5); ctx.fillRect(4, -18, 5, 5);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -14, 16, 14);
+      } else {
+        ctx.fillStyle = '#baffc9'; ctx.fillRect(-8, -14, 16, 14);
+      }
+
+      ctx.fillStyle = '#000'; ctx.fillRect(-4, -9, 2, 3); ctx.fillRect(2, -9, 2, 3);
+      ctx.fillStyle = 'rgba(120, 220, 255, 0.35)';
+      ctx.beginPath(); ctx.arc(0, -7, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -18, 4, 4);
+      ctx.restore();
+    }
+
+    function render3DRope(points) {
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const avgScale = (p1.scale + p2.scale) / 2;
+        const lineWidth = Math.max(1.4, 3.2 * avgScale);
+        const brightness = Math.min(255, Math.max(110, Math.floor(180 * avgScale)));
+        
+        let strokeColor = `rgb(${brightness}, ${brightness}, ${brightness})`;
+        let coreColor = (avgScale >= 1.0) ? '#ff2222' : '#771111';
+
+        if (stageLevel === 6) {
+          strokeColor = (avgScale >= 1.0) ? '#ffee00' : '#bb7700';
+          coreColor = '#ff2200';
+        } else if (stageLevel === 7) {
+          strokeColor = (avgScale >= 1.0) ? '#00ffff' : '#0077aa';
+          coreColor = '#ff00ff';
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.strokeStyle = coreColor;
+        ctx.lineWidth = Math.max(0.6, lineWidth * 0.42);
+        ctx.stroke();
+      }
+    }
+
+    function drawJuicyPlayer(x, y, sx, sy) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(sx, sy);
+
+      if (player.isGrounded && stageLevel < 7) {
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 13 * sx, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tailWiggle = player.isGrounded ? Math.sin(Date.now() * 0.008) * 3 : -6;
+      ctx.fillStyle = '#ff9933';
+      ctx.fillRect(-16, -14 + tailWiggle, 5, 4);
+      ctx.fillRect(-18, -18 + tailWiggle, 4, 5);
+      ctx.fillRect(-16, -22 + tailWiggle, 4, 5);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-14, -23 + tailWiggle, 3, 3);
+
+      ctx.fillStyle = '#ffb366';
+      ctx.fillRect(-13, -28, 26, 28);
+      ctx.strokeStyle = '#2d1800';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-13, -28, 26, 28);
+
+      ctx.fillStyle = '#cc6600';
+      ctx.fillRect(-2, -26, 4, 5);
+      ctx.fillRect(-8, -26, 3, 4);
+      ctx.fillRect(5, -26, 3, 4);
+
+      const earY = player.isGrounded ? -36 : -39;
+      ctx.fillStyle = '#ffb366';
+      ctx.fillRect(-13, earY, 8, 9);
+      ctx.strokeStyle = '#2d1800';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-13, earY, 8, 9);
+      ctx.fillStyle = '#ff99aa';
+      ctx.fillRect(-11, earY + 3, 4, 5);
+
+      ctx.fillStyle = '#ffb366';
+      ctx.fillRect(5, earY, 8, 9);
+      ctx.strokeStyle = '#2d1800';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(5, earY, 8, 9);
+      ctx.fillStyle = '#ff99aa';
+      ctx.fillRect(7, earY + 3, 4, 5);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-7, -14, 14, 14);
+
+      if (player.isGrounded) {
+        ctx.fillStyle = '#1a0d00';
+        ctx.fillRect(-8, -19, 5, 6);
+        ctx.fillRect(3, -19, 5, 6);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-8, -19, 2, 2);
+        ctx.fillRect(-5, -16, 2, 2);
+        ctx.fillRect(3, -19, 2, 2);
+        ctx.fillRect(6, -16, 2, 2);
+      } else {
+        ctx.strokeStyle = '#1a0d00';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-9, -16); ctx.lineTo(-6, -19); ctx.lineTo(-3, -16);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(3, -16); ctx.lineTo(6, -19); ctx.lineTo(9, -16);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#ff6688';
+      ctx.fillRect(-2, -13, 4, 3);
+      ctx.strokeStyle = '#552200';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-4, -10); ctx.lineTo(-1, -8); ctx.lineTo(-1, -10);
+      ctx.moveTo(4, -10); ctx.lineTo(1, -8); ctx.lineTo(1, -10);
+      ctx.stroke();
+
+      ctx.fillStyle = '#442200';
+      ctx.fillRect(-17, -14, 4, 1);
+      ctx.fillRect(-16, -11, 4, 1);
+      ctx.fillRect(13, -14, 4, 1);
+      ctx.fillRect(12, -11, 4, 1);
+
+      ctx.fillStyle = 'rgba(255, 100, 130, 0.45)';
+      ctx.fillRect(-11, -12, 4, 3);
+      ctx.fillRect(7, -12, 4, 3);
+
+      ctx.fillStyle = '#ffffff';
+      if (player.isGrounded) {
+        ctx.fillRect(-9, -4, 6, 4);
+        ctx.fillRect(3, -4, 6, 4);
+      } else {
+        ctx.fillRect(-6, -8, 5, 5);
+        ctx.fillRect(1, -8, 5, 5);
+        ctx.fillStyle = '#ff99aa';
+        ctx.fillRect(-5, -5, 3, 2);
+        ctx.fillRect(2, -5, 3, 2);
+      }
+
+      if (stageLevel === 7) {
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.22)';
+        ctx.beginPath();
+        ctx.arc(0, -18, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.28)';
+        ctx.beginPath();
+        ctx.arc(-10, -32, 6, 0, Math.PI * 2);
+        ctx.arc(10, -32, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTurner(x, y, isLeft) {
+      ctx.save();
+      const baseColor = isLeft ? '#ffffff' : '#2b2b36';
+      const spotColor = isLeft ? '#ff8833' : '#444455';
+      const earColor = isLeft ? '#ff8833' : '#2b2b36';
+
+      const tailAng = Math.sin(Date.now() * 0.006 + (isLeft ? 0 : Math.PI)) * 4;
+      ctx.fillStyle = isLeft ? '#ff8833' : '#1c1c24';
+      ctx.fillRect(x + (isLeft ? -15 : 11), y - 10 + tailAng, 4, 8);
+
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(x - 11, y - 28, 22, 28);
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 11, y - 28, 22, 28);
+
+      if (isLeft) {
+        ctx.fillStyle = spotColor;
+        ctx.fillRect(x - 11, y - 28, 10, 10);
+        ctx.fillStyle = '#444444';
+        ctx.fillRect(x + 3, y - 18, 8, 8);
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - 28); ctx.lineTo(x + 6, y - 28); ctx.lineTo(x, y - 14);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = earColor;
+      ctx.fillRect(x - 11, y - 35, 7, 8);
+      ctx.fillRect(x + 4, y - 35, 7, 8);
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(x - 11, y - 35, 7, 8);
+      ctx.strokeRect(x + 4, y - 35, 7, 8);
+      ctx.fillStyle = '#ff99aa';
+      ctx.fillRect(x - 9, y - 32, 3, 4);
+      ctx.fillRect(x + 6, y - 32, 3, 4);
+
+      const lookDir = isLeft ? 2 : -3;
+      ctx.fillStyle = '#111';
+      ctx.fillRect(x - 6 + lookDir, -20 + y, 3, 4);
+      ctx.fillRect(x + 2 + lookDir, -20 + y, 3, 4);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x - 6 + lookDir, -20 + y, 1, 2);
+      ctx.fillRect(x + 2 + lookDir, -20 + y, 1, 2);
+
+      ctx.fillStyle = '#ff6688';
+      ctx.fillRect(x - 1 + lookDir, -14 + y, 2, 2);
+      ctx.fillStyle = '#444';
+      if (isLeft) {
+        ctx.fillRect(x - 14, y - 15, 4, 1);
+        ctx.fillRect(x - 13, y - 12, 4, 1);
+      } else {
+        ctx.fillRect(x + 10, y - 15, 4, 1);
+        ctx.fillRect(x + 9, y - 12, 4, 1);
+      }
+
+      ctx.fillStyle = isLeft ? '#ff3344' : '#00aaff';
+      ctx.fillRect(x - 8, y - 12, 16, 3);
+      ctx.fillStyle = '#ffee00';
+      ctx.fillRect(x - 2, y - 11, 4, 4);
+
+      const handYOffset = -Math.sin(ropeAngle) * 5 * ropeDirection;
+      const handXOffset = Math.cos(ropeAngle) * 3 * (isLeft ? 1 : -1);
+      const pawX = x + (isLeft ? 9 : -9) + handXOffset;
+      const pawY = y - 18 + handYOffset;
+
+      ctx.fillStyle = '#8b5a2b';
+      ctx.fillRect(pawX - 2, pawY - 4, 4, 8);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(pawX, pawY, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#222'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.fillStyle = '#ff99aa';
+      ctx.beginPath(); ctx.arc(pawX, pawY, 2, 0, Math.PI * 2); ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawOverlay(title, sub) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#ffee00';
+      ctx.font = 'bold 22px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 25);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Courier New';
+      const lines = sub.split('\n');
+      lines.forEach((line, idx) => {
+        ctx.fillText(line, canvas.width / 2, canvas.height / 2 + 15 + (idx * 22));
+      });
+    }
+
+    window.onload = function() {
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
