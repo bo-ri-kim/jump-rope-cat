@@ -146,53 +146,36 @@
       height: 100%;
     }
 
-    /* 풀모달 오버레이 */
     .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.88);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      background: rgba(5, 8, 12, 0.94);
       z-index: 9999;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 16px;
-      pointer-events: auto;
-    }
-
-    /* 모달 열렸을 때 배경 비활성화 */
-    .modal-open #phone-frame {
-      pointer-events: none;
-      filter: brightness(0.6);
-      transition: filter 0.2s ease;
-    }
-
-    .modal-open .modal-overlay {
-      pointer-events: auto;
     }
 
     .modal-box {
       background: #111a24;
       border: 3px solid #00ffff;
       border-radius: 12px;
-      padding: 20px 16px;
+      padding: 18px 14px;
       width: 100%;
       max-width: 320px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       text-align: center;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 255, 255, 0.3);
-      pointer-events: auto;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
     }
 
     .modal-title {
       font-size: 18px;
       font-weight: 900;
       color: #ffee00;
-      letter-spacing: -0.5px;
     }
 
     .score-summary-card {
@@ -245,16 +228,8 @@
       font-size: 13px;
     }
 
-    .modal-btn.primary { 
-      background: #00cc66; 
-      color: #000; 
-      border-color: #66ffaa; 
-    }
-    .modal-btn.secondary { 
-      background: #2a3b46; 
-      color: #bbb; 
-      border-color: #4a5c68; 
-    }
+    .modal-btn.primary { background: #00cc66; color: #000; border-color: #66ffaa; }
+    .modal-btn.secondary { background: #2a3b46; color: #bbb; border-color: #4a5c68; }
 
     .leaderboard-list {
       list-style: none;
@@ -283,7 +258,6 @@
       color: #ffee00;
     }
 
-    /* 하단 메인 액션 버튼 */
     #actionBtn {
       width: 100%;
       background: #ff5500;
@@ -349,14 +323,12 @@
       <canvas id="gameCanvas" width="360" height="380"></canvas>
     </div>
 
-    <!-- 하단 액션 버튼 -->
     <button id="actionBtn" onclick="handleActionButtonClick()">
       <span id="actionBtnTitle">점프! (JUMP)</span>
       <span class="sub" id="actionBtnSub">탭: 소점프 / 롱홀드: 대점프 / Space</span>
     </button>
   </div>
 
-  <!-- 1. 게임 오버 결과 및 등록 풀모달 (최상위 루트로 이동하여 맨 앞으로 표시) -->
   <div class="modal-overlay" id="resultModal">
     <div class="modal-box">
       <div class="modal-title">💥 GAME OVER</div>
@@ -372,7 +344,6 @@
     </div>
   </div>
 
-  <!-- 2. 온라인 명예의 전당 모달 (최상위 루트로 이동하여 맨 앞으로 표시) -->
   <div class="modal-overlay" id="leaderboardModal">
     <div class="modal-box">
       <div class="modal-title">🏆 온라인 명예의 전당</div>
@@ -410,6 +381,7 @@
     let isGameStarted = false;
     let isPaused = false;
     let isWaitingRestart = false;
+    let isInputLocked = false; // 게임 오버 연타 시 리셋되는 것을 막는 잠금 플래그
 
     let score = 0;
     let bestScore = 0;
@@ -650,29 +622,15 @@
       }
     }
 
-    function setBackgroundInteractable(interactable) {
-      if (interactable) {
-        document.body.classList.remove('modal-open');
-        actionBtn.disabled = false;
-        pauseBtn.disabled = false;
-        document.querySelectorAll('.mode-btn, .leaderboard-btn').forEach(b => b.disabled = false);
-      } else {
-        document.body.classList.add('modal-open');
-        actionBtn.disabled = true;
-        pauseBtn.disabled = true;
-        document.querySelectorAll('.mode-btn, .leaderboard-btn').forEach(b => b.disabled = true);
-      }
-    }
-
     function resetGame() {
       score = 0;
       combo = 0;
       maxCombo = 0;
       isGameOver = false;
       isWaitingRestart = false;
+      isInputLocked = false;
       isPaused = false;
 
-      setBackgroundInteractable(true);
       resultModal.style.display = 'none';
       leaderboardModal.style.display = 'none';
       setActionButtonState('JUMP');
@@ -751,21 +709,25 @@
     }
 
     function handleActionButtonClick() {
-      if (isAnyModalOpen()) return;
-      if (isGameOver || isWaitingRestart || !isGameStarted) {
+      if (isAnyModalOpen() || isInputLocked) return;
+      if (isWaitingRestart || !isGameStarted) {
         resetGame();
       }
     }
 
     function handleJumpStart(e) {
-      if (isAnyModalOpen()) return;
+      if (isAnyModalOpen() || isInputLocked) return;
       if (e && e.cancelable && e.type.startsWith('touch')) e.preventDefault();
       if (isPaused || isCountingDown) return;
       initAudio();
 
-      if (!isGameStarted || isGameOver || isWaitingRestart) {
+      if (!isGameStarted || isWaitingRestart) {
         resetGame();
         return;
+      }
+
+      if (isGameOver) {
+        return; // 게임 오버 상태에서는 점프 핸들러로 리셋 방지
       }
 
       if (player.isGrounded) {
@@ -782,7 +744,7 @@
     }
 
     function handleJumpEnd(e) {
-      if (isAnyModalOpen()) return;
+      if (isAnyModalOpen() || isInputLocked) return;
       if (e && e.cancelable && e.type.startsWith('touch')) e.preventDefault();
       player.isHoldingJump = false;
       if (player.vy < -2.2) {
@@ -791,7 +753,7 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (isAnyModalOpen()) return;
+      if (isAnyModalOpen() || isInputLocked) return;
       if (e.repeat) return;
       if (e.code === 'KeyP') togglePause();
       else if (e.code === 'Space' || e.code === 'ArrowUp') {
@@ -801,7 +763,7 @@
     });
 
     window.addEventListener('keyup', (e) => {
-      if (isAnyModalOpen()) return;
+      if (isAnyModalOpen() || isInputLocked) return;
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault();
         handleJumpEnd(e);
@@ -829,6 +791,8 @@
 
     function showGameOverScreen() {
       isGameOver = true;
+      isInputLocked = true; // 연타 실수 방지 즉시 잠금
+      player.isHoldingJump = false;
       shakeAmount = 0;
       phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
       soundFail();
@@ -841,21 +805,18 @@
         bestText.innerText = `(BEST: ${bestScore})`;
       }
 
-      // 연타 실수 방지를 위해 350ms 후 모달 표시
-      setTimeout(() => {
-        modalScoreVal.innerText = score;
-        modalSubVal.innerText = `STAGE ${stageLevel} / ${maxCombo}콤보`;
-        nicknameInput.value = localStorage.getItem('jump_rope_cat_last_nick') || '';
-        setBackgroundInteractable(false);
-        resultModal.style.display = 'flex';
-        nicknameInput.focus();
-      }, 350);
+      // 딜레이 없이 즉시 결과 모달 표시하여 연타 씹힘 방지
+      modalScoreVal.innerText = score;
+      modalSubVal.innerText = `STAGE ${stageLevel} / ${maxCombo}콤보`;
+      nicknameInput.value = localStorage.getItem('jump_rope_cat_last_nick') || '';
+      resultModal.style.display = 'flex';
+      nicknameInput.focus();
     }
 
     function skipAndReadyRestart() {
       resultModal.style.display = 'none';
-      setBackgroundInteractable(true);
       isWaitingRestart = true;
+      isInputLocked = false;
       setActionButtonState('RETRY');
     }
 
@@ -910,7 +871,6 @@
     }
 
     async function openLeaderboardModal() {
-      setBackgroundInteractable(false);
       leaderboardModal.style.display = 'flex';
       leaderboardList.innerHTML = '<li class="leaderboard-item" style="justify-content: center;">불러오는 중...</li>';
       syncStatus.innerText = '';
@@ -957,9 +917,9 @@
 
     function closeLeaderboardModal() {
       leaderboardModal.style.display = 'none';
-      setBackgroundInteractable(true);
       if (isGameOver) {
         isWaitingRestart = true;
+        isInputLocked = false;
         setActionButtonState('RETRY');
       }
     }
@@ -1048,7 +1008,7 @@
         createParticles(canvas.width / 2, GROUND_Y - 2, hitColor, 5);
       }
 
-      const isRopeAtBottom = (ropeAngle > Math.PI - 0.32 && ropeAngle < Math.PI + 0.32);
+      const isRopeAtBottom = (ropeAngle > Math.PI - 0.35 && ropeAngle < Math.PI + 0.35);
 
       if (isRopeAtBottom && !ropePassed) {
         const jumpHeight = GROUND_Y - player.y;
