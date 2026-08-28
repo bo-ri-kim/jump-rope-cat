@@ -150,7 +150,7 @@
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(5, 8, 12, 0.94);
+      background: rgba(5, 8, 12, 0.95);
       z-index: 9999;
       flex-direction: column;
       align-items: center;
@@ -162,18 +162,18 @@
       background: #111a24;
       border: 3px solid #00ffff;
       border-radius: 12px;
-      padding: 18px 14px;
+      padding: 20px 16px;
       width: 100%;
       max-width: 320px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       text-align: center;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
     }
 
     .modal-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
       color: #ffee00;
     }
@@ -185,14 +185,14 @@
       padding: 12px 8px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       font-size: 13px;
       color: #ccc;
     }
 
     .score-summary-card b {
       color: #ffee00;
-      font-size: 20px;
+      font-size: 24px;
     }
 
     .modal-input {
@@ -201,7 +201,7 @@
       color: #fff;
       padding: 10px;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 15px;
       border-radius: 6px;
       text-align: center;
       outline: none;
@@ -323,7 +323,7 @@
       <canvas id="gameCanvas" width="360" height="380"></canvas>
     </div>
 
-    <button id="actionBtn" onclick="handleActionButtonClick()">
+    <button id="actionBtn">
       <span id="actionBtnTitle">점프! (JUMP)</span>
       <span class="sub" id="actionBtnSub">탭: 소점프 / 롱홀드: 대점프 / Space</span>
     </button>
@@ -334,7 +334,7 @@
       <div class="modal-title">💥 GAME OVER</div>
       <div class="score-summary-card">
         <div>최종 점수: <b id="modal-score-val">0</b>점</div>
-        <div style="font-size: 11px; color:#66ffcc;" id="modal-sub-val">STAGE 1 / 0콤보</div>
+        <div style="font-size: 12px; color:#66ffcc;" id="modal-sub-val">STAGE 1 / 0콤보</div>
       </div>
       <input type="text" id="nicknameInput" class="modal-input" maxlength="8" placeholder="닉네임 입력 (최대 8자)">
       <div class="modal-btn-row">
@@ -381,7 +381,7 @@
     let isGameStarted = false;
     let isPaused = false;
     let isWaitingRestart = false;
-    let isInputLocked = false; // 게임 오버 연타 시 리셋되는 것을 막는 잠금 플래그
+    let gameOverTimestamp = 0; // 게임 오버 발생 시간 기록
 
     let score = 0;
     let bestScore = 0;
@@ -615,10 +615,18 @@
         actionBtn.classList.add('retry-mode');
         actionBtnTitle.innerText = "🔄 다시 도전하기 (RETRY)";
         actionBtnSub.innerText = "탭하여 바로 재시작 / Space";
+        actionBtn.style.pointerEvents = 'auto';
+        actionBtn.style.opacity = '1';
+      } else if (state === 'LOCKED') {
+        actionBtn.classList.remove('retry-mode');
+        actionBtn.style.pointerEvents = 'none';
+        actionBtn.style.opacity = '0.5';
       } else {
         actionBtn.classList.remove('retry-mode');
         actionBtnTitle.innerText = "점프! (JUMP)";
         actionBtnSub.innerText = "탭: 소점프 / 롱홀드: 대점프 / Space";
+        actionBtn.style.pointerEvents = 'auto';
+        actionBtn.style.opacity = '1';
       }
     }
 
@@ -628,7 +636,7 @@
       maxCombo = 0;
       isGameOver = false;
       isWaitingRestart = false;
-      isInputLocked = false;
+      gameOverTimestamp = 0;
       isPaused = false;
 
       resultModal.style.display = 'none';
@@ -708,15 +716,13 @@
       return resultModal.style.display === 'flex' || leaderboardModal.style.display === 'flex';
     }
 
-    function handleActionButtonClick() {
-      if (isAnyModalOpen() || isInputLocked) return;
-      if (isWaitingRestart || !isGameStarted) {
-        resetGame();
-      }
+    function isGameOverLocked() {
+      // 게임 오버 발생 직후 0.8초 동안은 무조건 모든 입력 차단 (연타 실수 방지)
+      return isGameOver && (Date.now() - gameOverTimestamp < 800);
     }
 
     function handleJumpStart(e) {
-      if (isAnyModalOpen() || isInputLocked) return;
+      if (isAnyModalOpen() || isGameOverLocked()) return;
       if (e && e.cancelable && e.type.startsWith('touch')) e.preventDefault();
       if (isPaused || isCountingDown) return;
       initAudio();
@@ -727,7 +733,7 @@
       }
 
       if (isGameOver) {
-        return; // 게임 오버 상태에서는 점프 핸들러로 리셋 방지
+        return;
       }
 
       if (player.isGrounded) {
@@ -744,7 +750,7 @@
     }
 
     function handleJumpEnd(e) {
-      if (isAnyModalOpen() || isInputLocked) return;
+      if (isAnyModalOpen() || isGameOverLocked()) return;
       if (e && e.cancelable && e.type.startsWith('touch')) e.preventDefault();
       player.isHoldingJump = false;
       if (player.vy < -2.2) {
@@ -753,7 +759,7 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (isAnyModalOpen() || isInputLocked) return;
+      if (isAnyModalOpen() || isGameOverLocked()) return;
       if (e.repeat) return;
       if (e.code === 'KeyP') togglePause();
       else if (e.code === 'Space' || e.code === 'ArrowUp') {
@@ -763,7 +769,7 @@
     });
 
     window.addEventListener('keyup', (e) => {
-      if (isAnyModalOpen() || isInputLocked) return;
+      if (isAnyModalOpen() || isGameOverLocked()) return;
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault();
         handleJumpEnd(e);
@@ -777,12 +783,14 @@
 
     actionBtn.addEventListener('touchstart', (e) => {
       if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpStart(e);
+      else if (isWaitingRestart && !isAnyModalOpen()) resetGame();
     }, { passive: false });
     actionBtn.addEventListener('touchend', (e) => {
       if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpEnd(e);
     }, { passive: false });
     actionBtn.addEventListener('mousedown', (e) => {
       if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpStart(e);
+      else if (isWaitingRestart && !isAnyModalOpen()) resetGame();
     });
     actionBtn.addEventListener('mouseup', (e) => {
       if (!isGameOver && isGameStarted && !isWaitingRestart) handleJumpEnd(e);
@@ -791,7 +799,7 @@
 
     function showGameOverScreen() {
       isGameOver = true;
-      isInputLocked = true; // 연타 실수 방지 즉시 잠금
+      gameOverTimestamp = Date.now(); // 잠금 시간 기록
       player.isHoldingJump = false;
       shakeAmount = 0;
       phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
@@ -805,18 +813,19 @@
         bestText.innerText = `(BEST: ${bestScore})`;
       }
 
-      // 딜레이 없이 즉시 결과 모달 표시하여 연타 씹힘 방지
+      setActionButtonState('LOCKED');
+
+      // 점수 값 바인딩 후 모달 노출
       modalScoreVal.innerText = score;
       modalSubVal.innerText = `STAGE ${stageLevel} / ${maxCombo}콤보`;
       nicknameInput.value = localStorage.getItem('jump_rope_cat_last_nick') || '';
       resultModal.style.display = 'flex';
-      nicknameInput.focus();
+      setTimeout(() => nicknameInput.focus(), 50);
     }
 
     function skipAndReadyRestart() {
       resultModal.style.display = 'none';
       isWaitingRestart = true;
-      isInputLocked = false;
       setActionButtonState('RETRY');
     }
 
@@ -874,6 +883,7 @@
       leaderboardModal.style.display = 'flex';
       leaderboardList.innerHTML = '<li class="leaderboard-item" style="justify-content: center;">불러오는 중...</li>';
       syncStatus.innerText = '';
+      setActionButtonState('LOCKED');
 
       let records = [];
       let isOnline = false;
@@ -919,8 +929,9 @@
       leaderboardModal.style.display = 'none';
       if (isGameOver) {
         isWaitingRestart = true;
-        isInputLocked = false;
         setActionButtonState('RETRY');
+      } else {
+        setActionButtonState('JUMP');
       }
     }
 
