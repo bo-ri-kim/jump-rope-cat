@@ -146,6 +146,53 @@
       height: 100%;
     }
 
+    #pause-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(5, 8, 12, 0.85);
+      backdrop-filter: blur(2px);
+      z-index: 60;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .pause-screen-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffee00;
+      text-shadow: 0 2px 8px rgba(255, 238, 0, 0.4);
+    }
+
+    .pause-screen-sub {
+      font-size: 12px;
+      color: #bbccdd;
+      line-height: 1.5;
+    }
+
+    .screen-resume-btn {
+      background: #00cc66;
+      color: #000;
+      border: 2px solid #66ffaa;
+      border-radius: 8px;
+      padding: 11px 24px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #006633;
+      transition: transform 0.05s, box-shadow 0.05s;
+    }
+
+    .screen-resume-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #006633;
+    }
+
     .modal-overlay {
       display: none;
       position: fixed;
@@ -321,6 +368,11 @@
 
     <div id="canvas-container">
       <canvas id="gameCanvas" width="360" height="380"></canvas>
+      <div id="pause-overlay">
+        <div class="pause-screen-title">⏸️ PAUSED</div>
+        <div class="pause-screen-sub">게임이 일시정지되었습니다.<br>버튼을 누르면 카운트다운 후 재개됩니다.</div>
+        <button class="screen-resume-btn" id="screenResumeBtn" onclick="resumeGame(event)">▶ 계속하기 (RESUME)</button>
+      </div>
     </div>
 
     <button id="actionBtn">
@@ -368,6 +420,7 @@
     const actionBtnSub = document.getElementById('actionBtnSub');
     const pauseBtn = document.getElementById('pauseBtn');
     const phoneFrame = document.getElementById('phone-frame');
+    const pauseOverlay = document.getElementById('pause-overlay');
 
     const resultModal = document.getElementById('resultModal');
     const leaderboardModal = document.getElementById('leaderboardModal');
@@ -393,6 +446,7 @@
     let isCountingDown = false;
     let countdownValue = 3;
     let countdownScale = 2.5;
+    let countTimer = null;
 
     const GROUND_Y = 285;
 
@@ -595,12 +649,39 @@
     function soundJump() { playSynth(460, 'square', 0.05, 0.08); }
     function soundFail() { playSynth(110, 'sawtooth', 0.35, 0.3); }
 
+    function pauseGame() {
+      if (!isGameStarted || isGameOver || isPaused) return;
+      if (countTimer) {
+        clearInterval(countTimer);
+        countTimer = null;
+      }
+      isCountingDown = false;
+      isPaused = true;
+      pauseBtn.innerText = "RESUME";
+      pauseBtn.style.background = "#ffaa00";
+      pauseOverlay.style.display = 'flex';
+      setActionButtonState('LOCKED');
+    }
+
+    function resumeGame(e) {
+      if (e) e.stopPropagation();
+      if (!isGameStarted || isGameOver || !isPaused) return;
+      isPaused = false;
+      pauseOverlay.style.display = 'none';
+      pauseBtn.innerText = "PAUSE";
+      pauseBtn.style.background = "var(--pause-btn-bg)";
+      setActionButtonState('JUMP');
+      startCountdown();
+    }
+
     function togglePause(e) {
       if (e) e.stopPropagation();
-      if (!isGameStarted || isGameOver || isCountingDown) return;
-      isPaused = !isPaused;
-      pauseBtn.innerText = isPaused ? "RESUME" : "PAUSE";
-      pauseBtn.style.background = isPaused ? "#ffaa00" : "var(--pause-btn-bg)";
+      if (!isGameStarted || isGameOver) return;
+      if (isPaused) {
+        resumeGame(e);
+      } else {
+        pauseGame();
+      }
     }
 
     function selectGameMode(mode) {
@@ -631,6 +712,10 @@
     }
 
     function resetGame() {
+      if (countTimer) {
+        clearInterval(countTimer);
+        countTimer = null;
+      }
       score = 0;
       combo = 0;
       maxCombo = 0;
@@ -639,6 +724,7 @@
       gameOverTimestamp = 0;
       isPaused = false;
 
+      pauseOverlay.style.display = 'none';
       resultModal.style.display = 'none';
       leaderboardModal.style.display = 'none';
       setActionButtonState('JUMP');
@@ -686,8 +772,13 @@
     }
 
     function startCountdown() {
+      if (countTimer) clearInterval(countTimer);
       isCountingDown = true;
       isGameStarted = true;
+      isPaused = false;
+      pauseOverlay.style.display = 'none';
+      pauseBtn.innerText = "PAUSE";
+      pauseBtn.style.background = "var(--pause-btn-bg)";
       countdownValue = 3;
       countdownScale = 2.8;
       
@@ -695,7 +786,7 @@
       playCountSound(false);
       triggerHaptic(40);
 
-      const countInterval = setInterval(() => {
+      countTimer = setInterval(() => {
         countdownValue--;
         countdownScale = 2.8;
 
@@ -706,7 +797,8 @@
           playCountSound(true);
           triggerHaptic([60, 40, 80]);
         } else {
-          clearInterval(countInterval);
+          clearInterval(countTimer);
+          countTimer = null;
           isCountingDown = false;
         }
       }, 1000);
@@ -717,7 +809,6 @@
     }
 
     function isGameOverLocked() {
-      // 게임 오버 발생 직후 0.8초 동안은 무조건 모든 입력 차단 (연타 실수 방지)
       return isGameOver && (Date.now() - gameOverTimestamp < 800);
     }
 
@@ -799,7 +890,7 @@
 
     function showGameOverScreen() {
       isGameOver = true;
-      gameOverTimestamp = Date.now(); // 잠금 시간 기록
+      gameOverTimestamp = Date.now();
       player.isHoldingJump = false;
       shakeAmount = 0;
       phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
@@ -815,7 +906,6 @@
 
       setActionButtonState('LOCKED');
 
-      // 점수 값 바인딩 후 모달 노출
       modalScoreVal.innerText = score;
       modalSubVal.innerText = `STAGE ${stageLevel} / ${maxCombo}콤보`;
       nicknameInput.value = localStorage.getItem('jump_rope_cat_last_nick') || '';
@@ -880,6 +970,10 @@
     }
 
     async function openLeaderboardModal() {
+      if (isGameStarted && !isGameOver && !isPaused) {
+        pauseGame();
+      }
+
       leaderboardModal.style.display = 'flex';
       leaderboardList.innerHTML = '<li class="leaderboard-item" style="justify-content: center;">불러오는 중...</li>';
       syncStatus.innerText = '';
@@ -930,6 +1024,13 @@
       if (isGameOver) {
         isWaitingRestart = true;
         setActionButtonState('RETRY');
+      } else if (isGameStarted) {
+        if (isPaused) {
+          pauseOverlay.style.display = 'flex';
+          setActionButtonState('LOCKED');
+        } else {
+          setActionButtonState('JUMP');
+        }
       } else {
         setActionButtonState('JUMP');
       }
@@ -1486,8 +1587,6 @@
         drawOverlay("넘어넘어: CAT JUMP", "하단 점프 버튼 또는 화면 터치로 시작!");
       } else if (isWaitingRestart) {
         drawOverlay("READY TO RETRY?", "화면 터치 또는 하단 버튼을 눌러 재도전");
-      } else if (isPaused) {
-        drawOverlay("⏸️ PAUSED", "일시정지 중\nPAUSE 버튼을 눌러 재개");
       }
 
       ctx.restore();
