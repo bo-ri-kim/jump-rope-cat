@@ -484,7 +484,7 @@
 
     let currentPattern = 'NORMAL';
     let blackholeSpeedMult = 1.0;
-    let blackholeTurnsRemaining = 0;
+    let blackholeTurnsRemaining = 3;
 
     let shakeAmount = 0;
     let floatingTexts = [];
@@ -506,6 +506,18 @@
 
     const ROPE_SEGMENTS = 28;
     const ropePointsBuffer = Array.from({ length: ROPE_SEGMENTS + 1 }, () => ({ x: 0, y: 0, z: 0, scale: 1 }));
+
+    // 땅 안쪽에 자연스럽게 심어진 3가닥 풀잎 (공중에 뜨는 능선 풀 완전 제거)
+    const groundGrassTufts = [
+      { x: 38,  y: GROUND_Y + 26, len: 5.5 },
+      { x: 78,  y: GROUND_Y + 44, len: 6.5 },
+      { x: 125, y: GROUND_Y + 30, len: 5.5 },
+      { x: 172, y: GROUND_Y + 52, len: 6.0 },
+      { x: 220, y: GROUND_Y + 32, len: 5.5 },
+      { x: 268, y: GROUND_Y + 50, len: 6.0 },
+      { x: 308, y: GROUND_Y + 28, len: 5.5 },
+      { x: 335, y: GROUND_Y + 44, len: 6.0 }
+    ];
 
     bestScore = parseInt(localStorage.getItem('jump_rope_cat_hiscore') || '0', 10);
     bestText.innerText = `(BEST: ${bestScore})`;
@@ -1640,6 +1652,7 @@
       const ropeBehind = centerZ < 0;
 
       if (ropeBehind) render3DRope(ropePoints);
+      drawGroundedShadows();
       drawJuicyPlayer(player.x, player.y, player.scaleX, player.scaleY);
       if (!ropeBehind) render3DRope(ropePoints);
 
@@ -1744,121 +1757,6 @@
       ctx.restore();
     }
 
-    function drawDynamicBackground() {
-      let skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-      let groundColor = '#449e22';
-      let groundBorder = '#2d6e15';
-
-      if (stageLevel === 1) {
-        skyGrad.addColorStop(0, '#5cb8ff'); skyGrad.addColorStop(1, '#a6ddff');
-        groundColor = '#449e22'; groundBorder = '#2d6e15';
-      } else if (stageLevel === 2) {
-        skyGrad.addColorStop(0, '#e65c00'); skyGrad.addColorStop(0.6, '#f8981d'); skyGrad.addColorStop(1, '#fed136');
-        groundColor = '#5c6b1d'; groundBorder = '#3e4714';
-      } else if (stageLevel === 3) {
-        skyGrad.addColorStop(0, '#0a1128'); skyGrad.addColorStop(0.7, '#1c2541'); skyGrad.addColorStop(1, '#3a506b');
-        groundColor = '#1e3820'; groundBorder = '#122414';
-      } else if (stageLevel === 4) {
-        skyGrad.addColorStop(0, '#05021a'); skyGrad.addColorStop(0.5, '#2b0938'); skyGrad.addColorStop(1, '#571064');
-        groundColor = '#241030'; groundBorder = '#421659';
-      } else if (stageLevel === 5) {
-        skyGrad.addColorStop(0, '#0f051d'); skyGrad.addColorStop(1, '#1b1035');
-        groundColor = '#201830'; groundBorder = '#553377';
-      } else if (stageLevel === 6) {
-        skyGrad.addColorStop(0, '#380000'); skyGrad.addColorStop(0.5, '#7a0900'); skyGrad.addColorStop(1, '#d13400');
-        groundColor = '#260a0a'; groundBorder = '#691515';
-      } else if (stageLevel === 7) {
-        skyGrad.addColorStop(0, '#001a33'); skyGrad.addColorStop(0.6, '#000814'); skyGrad.addColorStop(1, '#002244');
-      } else {
-        skyGrad.addColorStop(0, '#030008'); skyGrad.addColorStop(1, '#000000');
-      }
-
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, canvas.width, stageLevel >= 7 ? canvas.height : GROUND_Y);
-
-      if (stageLevel >= 3 && stageLevel <= 6) {
-        for (let i = 0; i < backgroundStars.length; i++) {
-          const s = backgroundStars[i];
-          ctx.fillStyle = stageLevel === 6 ? '#ffaa44' : '#ffffff';
-          ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(Date.now() * s.blinkSpeed));
-          ctx.fillRect(s.x, s.y, s.size, s.size);
-        }
-        ctx.globalAlpha = 1;
-      }
-
-      if (stageLevel === 7) {
-        for (let i = 0; i < warpStars.length; i++) {
-          const w = warpStars[i];
-          ctx.strokeStyle = w.color;
-          ctx.lineWidth = 1.8;
-          ctx.beginPath();
-          ctx.moveTo(w.x, w.y);
-          ctx.lineTo(w.x, w.y + w.length);
-          ctx.stroke();
-        }
-      }
-
-      if (stageLevel === 8) {
-        const cx = 180, cy = 110;
-        
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(blackholeAccretionAngle);
-        const grad = ctx.createRadialGradient(0, 0, 15, 0, 0, 65);
-        grad.addColorStop(0, 'rgba(0,0,0,1)');
-        grad.addColorStop(0.4, 'rgba(255, 0, 170, 0.85)');
-        grad.addColorStop(0.7, 'rgba(0, 255, 255, 0.6)');
-        grad.addColorStop(1, 'rgba(191, 0, 255, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 75, 26, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#bf00ff';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        for (let i = 0; i < blackholeInwardStars.length; i++) {
-          const bs = blackholeInwardStars[i];
-          const px = cx + Math.cos(bs.angle) * bs.radius;
-          const py = cy + Math.sin(bs.angle) * (bs.radius * 0.45);
-          ctx.fillStyle = bs.color;
-          ctx.globalAlpha = Math.min(1.0, bs.radius / 30);
-          ctx.fillRect(px, py, bs.size, bs.size);
-        }
-        ctx.globalAlpha = 1;
-      }
-
-      if (stageLevel === 4) {
-        ctx.fillStyle = '#e0aaff';
-        ctx.beginPath();
-        ctx.arc(300, 70, 32, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (stageLevel === 6) {
-        const sunPulse = 48 + 4 * Math.sin(Date.now() * 0.008);
-        ctx.fillStyle = '#ff2200';
-        ctx.beginPath();
-        ctx.arc(180, 80, sunPulse, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      if (stageLevel < 7) {
-        ctx.fillStyle = groundColor;
-        ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
-        ctx.strokeStyle = groundBorder;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(0, GROUND_Y);
-        ctx.lineTo(canvas.width, GROUND_Y);
-        ctx.stroke();
-      }
-    }
-
     function render3DRope(points) {
       for (let i = 0; i < points.length - 1; i++) {
         const p1 = points[i];
@@ -1902,13 +1800,6 @@
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(sx, sy);
-
-      if (player.isGrounded && stageLevel < 7) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 13 * sx, 4.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
 
       const tailWiggle = player.isGrounded ? Math.sin(Date.now() * 0.008) * 3 : -6;
       ctx.fillStyle = '#ff9933';
@@ -2211,6 +2102,261 @@
       ctx.fillStyle = displayColor;
       ctx.fillText(displayText, 0, 0);
       ctx.restore();
+    }
+
+    // 은은하고 소프트한 미니멀 구름 렌더러
+    function drawSoftFloatingCloud(cx, cy, scale, alpha, baseColor = '#ffffff') {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = baseColor;
+      ctx.beginPath();
+      // 부드러운 타원 베이스
+      ctx.ellipse(cx, cy, 32 * scale, 9 * scale, 0, 0, Math.PI * 2);
+      ctx.arc(cx - 13 * scale, cy - 4 * scale, 12 * scale, 0, Math.PI * 2);
+      ctx.arc(cx + 11 * scale, cy - 4 * scale, 11 * scale, 0, Math.PI * 2);
+      ctx.arc(cx, cy - 10 * scale, 14 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 언덕의 y좌표 곡선 계산기 (살짝 더 도톰하고 높아진 완만한 곡선 언덕)
+    function getHillCurveY(x) {
+      const t = (x - 180) / 180;
+      return GROUND_Y - 14 + (t * t * 18);
+    }
+
+    // 캐릭터 및 줄돌림이들의 바닥 그림자 (체공 높이에 따라 동적 반응)
+    function drawGroundedShadows() {
+      if (stageLevel >= 7) return;
+
+      ctx.save();
+      // 1. 좌우 줄 돌리는 고양이들 바닥 그림자
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(LEFT_HAND.x, GROUND_Y, 14, 4.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(RIGHT_HAND.x, GROUND_Y, 14, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. 점프하는 주인공 고양이 바닥 그림자 (공중에 뜰수록 작고 옅어짐)
+      const jumpHeight = Math.max(0, GROUND_Y - player.y);
+      const shadowRadiusX = Math.max(7, (15 - jumpHeight * 0.08) * player.scaleX);
+      const shadowRadiusY = Math.max(2.4, 4.8 - jumpHeight * 0.03);
+      const shadowAlpha = Math.max(0.10, 0.36 - (jumpHeight * 0.0035));
+
+      ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+      ctx.beginPath();
+      ctx.ellipse(player.x, GROUND_Y, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 매우 단순화된 3가닥 라인 잔디 (심플 & 미니멀)
+    function drawSimple3LineGrass(x, y, len, color, tilt = 0) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(tilt);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.4;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      // 중앙 수직선
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -len);
+      // 좌측 삐침
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-2.8, -len * 0.78);
+      // 우측 삐침
+      ctx.moveTo(0, 0);
+      ctx.lineTo(2.8, -len * 0.78);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawDynamicBackground() {
+      let skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      let groundColor = '#72c818';
+      let groundBorder = '#55a40e';
+      let cloudBase = '#ffffff';
+      let grassColor = '#468e0e';
+      let innerGrassColor = '#5db018';
+
+      if (stageLevel === 1) {
+        skyGrad.addColorStop(0, '#58baff');
+        skyGrad.addColorStop(1, '#9ee5ff');
+        groundColor = '#72c818';
+        groundBorder = '#539f0d';
+        cloudBase = '#ffffff';
+        grassColor = '#468e0e';
+        innerGrassColor = '#5db018';
+      } else if (stageLevel === 2) {
+        skyGrad.addColorStop(0, '#e85c10');
+        skyGrad.addColorStop(0.55, '#fa9420');
+        skyGrad.addColorStop(1, '#ffc838');
+        groundColor = '#8ba818';
+        groundBorder = '#69840c';
+        cloudBase = '#ffe3c2';
+        grassColor = '#58730b';
+        innerGrassColor = '#719011';
+      } else if (stageLevel === 3) {
+        skyGrad.addColorStop(0, '#091126');
+        skyGrad.addColorStop(0.7, '#1b2542');
+        skyGrad.addColorStop(1, '#334460');
+        groundColor = '#1f3c24';
+        groundBorder = '#122616';
+        cloudBase = '#6a82a6';
+        grassColor = '#132817';
+        innerGrassColor = '#1b3820';
+      } else if (stageLevel === 4) {
+        skyGrad.addColorStop(0, '#05021a');
+        skyGrad.addColorStop(0.5, '#2b0938');
+        skyGrad.addColorStop(1, '#571064');
+        groundColor = '#38164f';
+        groundBorder = '#250c36';
+        cloudBase = '#aa66cc';
+        grassColor = '#220a32';
+        innerGrassColor = '#2e1241';
+      } else if (stageLevel === 5) {
+        skyGrad.addColorStop(0, '#0f051d');
+        skyGrad.addColorStop(1, '#1b1035');
+        groundColor = '#28193f';
+        groundBorder = '#180e28';
+        cloudBase = '#9977bb';
+        grassColor = '#1a0f2b';
+        innerGrassColor = '#231639';
+      } else if (stageLevel === 6) {
+        skyGrad.addColorStop(0, '#380000');
+        skyGrad.addColorStop(0.5, '#7a0900');
+        skyGrad.addColorStop(1, '#d13400');
+        groundColor = '#260a0a';
+        groundBorder = '#691515';
+      } else if (stageLevel === 7) {
+        skyGrad.addColorStop(0, '#001a33');
+        skyGrad.addColorStop(0.6, '#000814');
+        skyGrad.addColorStop(1, '#002244');
+      } else {
+        skyGrad.addColorStop(0, '#030008');
+        skyGrad.addColorStop(1, '#000000');
+      }
+
+      // 하늘 배경을 캔버스 전체에 칠해 지면 양옆 틈새의 검은색 노출 원천 차단
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // STAGE 3~6 밤하늘 별
+      if (stageLevel >= 3 && stageLevel <= 6) {
+        for (let i = 0; i < backgroundStars.length; i++) {
+          const s = backgroundStars[i];
+          ctx.fillStyle = stageLevel === 6 ? '#ffaa44' : '#ffffff';
+          ctx.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(Date.now() * s.blinkSpeed));
+          ctx.fillRect(s.x, s.y, s.size, s.size);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // STAGE 1~5: 하늘에 연하게 떠 있는 미니멀 소프트 구름들
+      if (stageLevel <= 5) {
+        // 높은 하늘에 은은하게 떠 있는 구름
+        drawSoftFloatingCloud(80, 70, 0.95, 0.40, cloudBase);
+        drawSoftFloatingCloud(260, 115, 0.80, 0.32, cloudBase);
+        drawSoftFloatingCloud(175, 175, 0.70, 0.25, cloudBase);
+      }
+
+      if (stageLevel === 7) {
+        for (let i = 0; i < warpStars.length; i++) {
+          const w = warpStars[i];
+          ctx.strokeStyle = w.color;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(w.x, w.y);
+          ctx.lineTo(w.x, w.y + w.length);
+          ctx.stroke();
+        }
+      }
+
+      if (stageLevel === 8) {
+        const cx = 180, cy = 110;
+        
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(blackholeAccretionAngle);
+        const grad = ctx.createRadialGradient(0, 0, 15, 0, 0, 65);
+        grad.addColorStop(0, 'rgba(0,0,0,1)');
+        grad.addColorStop(0.4, 'rgba(255, 0, 170, 0.85)');
+        grad.addColorStop(0.7, 'rgba(0, 255, 255, 0.6)');
+        grad.addColorStop(1, 'rgba(191, 0, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 75, 26, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#bf00ff';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        for (let i = 0; i < blackholeInwardStars.length; i++) {
+          const bs = blackholeInwardStars[i];
+          const px = cx + Math.cos(bs.angle) * bs.radius;
+          const py = cy + Math.sin(bs.angle) * (bs.radius * 0.45);
+          ctx.fillStyle = bs.color;
+          ctx.globalAlpha = Math.min(1.0, bs.radius / 30);
+          ctx.fillRect(px, py, bs.size, bs.size);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      if (stageLevel === 4) {
+        ctx.fillStyle = '#e0aaff';
+        ctx.beginPath();
+        ctx.arc(300, 70, 32, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (stageLevel === 6) {
+        const sunPulse = 48 + 4 * Math.sin(Date.now() * 0.008);
+        ctx.fillStyle = '#ff2200';
+        ctx.beginPath();
+        ctx.arc(180, 80, sunPulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 지면 렌더링 (Stage 1~6)
+      if (stageLevel < 7) {
+        ctx.fillStyle = groundColor;
+        ctx.beginPath();
+        if (stageLevel <= 5) {
+          ctx.moveTo(0, getHillCurveY(0));
+          ctx.quadraticCurveTo(180, GROUND_Y - 15, 360, getHillCurveY(360));
+          ctx.lineTo(canvas.width, canvas.height);
+          ctx.lineTo(0, canvas.height);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = groundBorder;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(0, getHillCurveY(0));
+          ctx.quadraticCurveTo(180, GROUND_Y - 15, 360, getHillCurveY(360));
+          ctx.stroke();
+
+          // 잔디 언덕 안쪽에 안정적으로 자리잡은 3선 풀잎만 렌더링
+          for (let i = 0; i < groundGrassTufts.length; i++) {
+            const gg = groundGrassTufts[i];
+            drawSimple3LineGrass(gg.x, gg.y, gg.len, innerGrassColor, 0);
+          }
+        } else {
+          ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+          ctx.strokeStyle = groundBorder;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, GROUND_Y);
+          ctx.lineTo(canvas.width, GROUND_Y);
+          ctx.stroke();
+        }
+      }
     }
 
     let lastFrameTime = performance.now();
