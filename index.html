@@ -43,13 +43,24 @@
 
     @keyframes infinityPulse {
       0% { border-color: #00ffff; }
-      33% { border-color: #ff00ff; }
-      66% { border-color: #ffee00; }
+      50% { border-color: #ff00ff; }
       100% { border-color: #00ffff; }
+    }
+
+    @keyframes blackholeWobble {
+      0% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.008, 0.992) rotate(0.4deg); }
+      50% { transform: scale(0.994, 1.006) rotate(-0.3deg); }
+      75% { transform: scale(1.005, 0.996) rotate(0.2deg); }
+      100% { transform: scale(1) rotate(0deg); }
     }
 
     .supernova-frame { animation: supernovaPulse 0.4s infinite !important; }
     .infinity-frame { animation: infinityPulse 0.25s infinite !important; }
+    .blackhole-frame {
+      border-color: #bf00ff !important;
+      animation: blackholeWobble 2.4s ease-in-out infinite, infinityPulse 0.4s infinite !important;
+    }
 
     #phone-frame {
       width: 100%;
@@ -146,38 +157,31 @@
       height: 100%;
     }
 
-    #pause-overlay {
+    #pause-screen-overlay {
       display: none;
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(5, 8, 12, 0.85);
-      backdrop-filter: blur(2px);
+      background: rgba(0, 0, 0, 0.78);
       z-index: 60;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
-      text-align: center;
-      padding: 16px;
+      gap: 16px;
     }
 
-    .pause-screen-title {
-      font-size: 26px;
+    .pause-screen-text {
+      font-size: 24px;
       font-weight: 900;
       color: #ffee00;
-      text-shadow: 0 2px 8px rgba(255, 238, 0, 0.4);
-    }
-
-    .pause-screen-sub {
-      font-size: 12px;
-      color: #bbccdd;
-      line-height: 1.5;
+      text-align: center;
+      line-height: 1.4;
+      text-shadow: 0 2px 10px rgba(255, 238, 0, 0.4);
     }
 
     .screen-resume-btn {
       background: #00cc66;
       color: #000;
-      border: 2px solid #66ffaa;
+      border: 2px solid #fff;
       border-radius: 8px;
       padding: 11px 24px;
       font-family: inherit;
@@ -189,8 +193,53 @@
     }
 
     .screen-resume-btn:active {
-      transform: translateY(3px);
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #006633;
+    }
+
+    #actionBtn {
+      width: 100%;
+      background: #ff5500;
+      color: #fff;
+      border: 3px solid #ffaa33;
+      border-radius: 10px;
+      padding: 13px 0;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #992200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    #actionBtn.retry-mode {
+      background: #00aa55;
+      border-color: #66ffaa;
+      box-shadow: 0 5px 0 #006633;
+    }
+
+    #actionBtn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #992200;
+    }
+
+    #actionBtn.retry-mode:active {
       box-shadow: 0 1px 0 #006633;
+    }
+
+    #actionBtn span.sub {
+      font-size: 11px;
+      font-weight: normal;
+      color: #ffd0a0;
+    }
+
+    #actionBtn.retry-mode span.sub {
+      color: #ccffdd;
     }
 
     .modal-overlay {
@@ -304,51 +353,6 @@
       background: #2b2505;
       color: #ffee00;
     }
-
-    #actionBtn {
-      width: 100%;
-      background: #ff5500;
-      color: #fff;
-      border: 3px solid #ffaa33;
-      border-radius: 10px;
-      padding: 13px 0;
-      font-family: inherit;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 5px 0 #992200;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      transition: background 0.15s, border-color 0.15s;
-    }
-
-    #actionBtn.retry-mode {
-      background: #00aa55;
-      border-color: #66ffaa;
-      box-shadow: 0 5px 0 #006633;
-    }
-
-    #actionBtn:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #992200;
-    }
-
-    #actionBtn.retry-mode:active {
-      box-shadow: 0 1px 0 #006633;
-    }
-
-    #actionBtn span.sub {
-      font-size: 11px;
-      font-weight: normal;
-      color: #ffd0a0;
-    }
-
-    #actionBtn.retry-mode span.sub {
-      color: #ccffdd;
-    }
   </style>
 </head>
 <body>
@@ -356,7 +360,7 @@
   <div id="phone-frame">
     <div id="mode-bar">
       <button class="mode-btn active" id="mode-normal" onclick="selectGameMode('NORMAL')">일반 순차</button>
-      <button class="mode-btn" id="mode-infinity" onclick="selectGameMode('INFINITY')">🌌 인피니티</button>
+      <button class="mode-btn" id="mode-infinity" onclick="selectGameMode('INFINITY')">🕳️ 블랙홀</button>
       <button class="leaderboard-btn" onclick="openLeaderboardModal()">🏆 웹 랭킹</button>
     </div>
 
@@ -368,10 +372,10 @@
 
     <div id="canvas-container">
       <canvas id="gameCanvas" width="360" height="380"></canvas>
-      <div id="pause-overlay">
-        <div class="pause-screen-title">⏸️ PAUSED</div>
-        <div class="pause-screen-sub">게임이 일시정지되었습니다.<br>버튼을 누르면 카운트다운 후 재개됩니다.</div>
-        <button class="screen-resume-btn" id="screenResumeBtn" onclick="resumeGame(event)">▶ 계속하기 (RESUME)</button>
+      
+      <div id="pause-screen-overlay">
+        <div class="pause-screen-text">⏸️ PAUSED<br><span style="font-size: 12px; color: #aaccff; font-weight: normal;">게임이 일시정지되었습니다</span></div>
+        <button class="screen-resume-btn" onclick="resumeGameFromScreen(event)">▶ 계속하기 (RESUME)</button>
       </div>
     </div>
 
@@ -420,7 +424,7 @@
     const actionBtnSub = document.getElementById('actionBtnSub');
     const pauseBtn = document.getElementById('pauseBtn');
     const phoneFrame = document.getElementById('phone-frame');
-    const pauseOverlay = document.getElementById('pause-overlay');
+    const pauseScreenOverlay = document.getElementById('pause-screen-overlay');
 
     const resultModal = document.getElementById('resultModal');
     const leaderboardModal = document.getElementById('leaderboardModal');
@@ -434,7 +438,7 @@
     let isGameStarted = false;
     let isPaused = false;
     let isWaitingRestart = false;
-    let gameOverTimestamp = 0; // 게임 오버 발생 시간 기록
+    let gameOverTimestamp = 0;
 
     let score = 0;
     let bestScore = 0;
@@ -443,10 +447,14 @@
     let stageLevel = 1;
     let selectedMode = 'NORMAL';
 
+    // 미세 상향된 템포 가중치 & BPM 설정 (STAGE 8: 중력 왜곡으로 속도를 낮추고 심리전에 집중)
+    const STAGE_SPEED_MULT = [0, 1.00, 1.09, 1.20, 1.32, 1.45, 1.58, 1.74, 1.20];
+    const STAGE_BPMS = [0, 112, 122, 134, 146, 160, 174, 190, 136];
+
     let isCountingDown = false;
     let countdownValue = 3;
     let countdownScale = 2.5;
-    let countTimer = null;
+    let countdownIntervalId = null;
 
     const GROUND_Y = 285;
 
@@ -457,8 +465,8 @@
       scaleX: 1,
       scaleY: 1,
       isGrounded: true,
-      gravity: 0.88,
-      baseJumpForce: -9.0,
+      gravity: 0.84,
+      baseJumpForce: -8.8,
       isHoldingJump: false,
       jumpHoldFrames: 0,
       maxHoldFrames: 8
@@ -469,13 +477,14 @@
 
     let ropeAngle = 0;
     let ropeDirection = 1;
-    let baseSpeed = 0.085;
-    let currentSpeed = 0.085;
+    let baseSpeed = 0.075;
+    let currentSpeed = 0.075;
     let ropePassed = false;
     let hasWhipSoundPlayed = false;
 
     let currentPattern = 'NORMAL';
-    let patternTimer = 0;
+    let blackholeSpeedMult = 1.0;
+    let blackholeTurnsRemaining = 0;
 
     let shakeAmount = 0;
     let floatingTexts = [];
@@ -484,10 +493,13 @@
     let backgroundStars = [];
     let magmaParticles = [];
     let warpStars = [];
+    let blackholeInwardStars = [];
+    let shockwaves = [];
     let astroAnimals = [];
     let spaceships = [];
     let crashingShip = null;
     let glassCracks = [];
+    let blackholeAccretionAngle = 0;
     
     let comboPopup = { text: '', color: '#ffdd00', scale: 0, alpha: 0 };
     let stageAlert = { text: '', sub: '', alpha: 0, scale: 1 };
@@ -514,6 +526,16 @@
         length: Math.random() * 30 + 15,
         speed: Math.random() * 10 + 12,
         color: Math.random() < 0.33 ? '#00ffff' : (Math.random() < 0.66 ? '#ff00ff' : '#ffee00')
+      });
+    }
+
+    for (let i = 0; i < 50; i++) {
+      blackholeInwardStars.push({
+        angle: Math.random() * Math.PI * 2,
+        radius: Math.random() * 160 + 20,
+        speed: Math.random() * 1.6 + 0.8,
+        size: Math.random() * 2 + 1,
+        color: Math.random() < 0.5 ? '#ff00aa' : '#00ffff'
       });
     }
 
@@ -554,9 +576,54 @@
     }
 
     function getBpmInterval() {
-      const stageBPM = [0, 115, 125, 138, 150, 165, 178, 190];
-      const bpm = stageBPM[stageLevel] || 115;
+      const bpm = STAGE_BPMS[stageLevel] || 115;
       return (60 / bpm / 4) * 1000;
+    }
+
+    // 줄이 바닥을 가를 때의 쫄깃한 스냅 + 타격음
+    function playWhipSnapSound() {
+      if (!audioCtx) return;
+      try {
+        const t = audioCtx.currentTime;
+        
+        // 1. 채찍 스냅 노이즈
+        const bufferSize = audioCtx.sampleRate * 0.04;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(stageLevel >= 7 ? 2200 : 1600, t);
+        filter.Q.setValueAtTime(3.0, t);
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.20, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noise.start(t);
+
+        // 2. 바닥 착지 찰진 타격 킥
+        const osc = audioCtx.createOscillator();
+        const thumpGain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(stageLevel >= 7 ? 280 : 200, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.04);
+
+        thumpGain.gain.setValueAtTime(0.24, t);
+        thumpGain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+
+        osc.connect(thumpGain);
+        thumpGain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.045);
+      } catch(e) {}
     }
 
     function startBGM() {
@@ -565,9 +632,10 @@
         if (isGameStarted && !isGameOver && !isPaused && !isCountingDown && audioCtx) {
           const freq = bgmNotes[bgmStep % bgmNotes.length];
           if (freq > 0) {
-            playSynth(freq * (stageLevel === 7 ? 0.75 : 0.5), 'triangle', 0.05, 0.035);
+            const pitchMult = stageLevel === 8 ? 0.85 : (stageLevel === 7 ? 0.75 : 0.5);
+            playSynth(freq * pitchMult, 'triangle', 0.05, 0.035);
             if (bgmStep % 4 === 0) {
-              playSynth(freq * (stageLevel === 7 ? 1.5 : 1.0), 'square', 0.035, 0.03);
+              playSynth(freq * (stageLevel >= 7 ? 1.5 : 1.0), 'square', 0.035, 0.03);
             }
           }
           bgmStep++;
@@ -595,23 +663,6 @@
     function playCountSound(isFinal) {
       if (!audioCtx) return;
       playSynth(isFinal ? 880 : 440, 'square', 0.12, 0.2);
-    }
-
-    function playWhipSound() {
-      if (!audioCtx) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(stageLevel === 7 ? 400 : 250, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.035);
-        gain.gain.setValueAtTime(0.09, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.035);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.035);
-      } catch(e) {}
     }
 
     function playCrashBoom() {
@@ -649,38 +700,37 @@
     function soundJump() { playSynth(460, 'square', 0.05, 0.08); }
     function soundFail() { playSynth(110, 'sawtooth', 0.35, 0.3); }
 
-    function pauseGame() {
-      if (!isGameStarted || isGameOver || isPaused) return;
-      if (countTimer) {
-        clearInterval(countTimer);
-        countTimer = null;
-      }
-      isCountingDown = false;
-      isPaused = true;
-      pauseBtn.innerText = "RESUME";
-      pauseBtn.style.background = "#ffaa00";
-      pauseOverlay.style.display = 'flex';
-      setActionButtonState('LOCKED');
-    }
-
-    function resumeGame(e) {
-      if (e) e.stopPropagation();
-      if (!isGameStarted || isGameOver || !isPaused) return;
-      isPaused = false;
-      pauseOverlay.style.display = 'none';
-      pauseBtn.innerText = "PAUSE";
-      pauseBtn.style.background = "var(--pause-btn-bg)";
-      setActionButtonState('JUMP');
-      startCountdown();
+    function setPauseState(paused) {
+      isPaused = paused;
+      pauseBtn.innerText = isPaused ? "RESUME" : "PAUSE";
+      pauseBtn.style.background = isPaused ? "#ffaa00" : "var(--pause-btn-bg)";
+      pauseScreenOverlay.style.display = isPaused ? "flex" : "none";
     }
 
     function togglePause(e) {
       if (e) e.stopPropagation();
       if (!isGameStarted || isGameOver) return;
+
+      if (isCountingDown) {
+        if (countdownIntervalId) clearInterval(countdownIntervalId);
+        isCountingDown = false;
+        setPauseState(true);
+        return;
+      }
+
       if (isPaused) {
-        resumeGame(e);
+        setPauseState(false);
+        startCountdown();
       } else {
-        pauseGame();
+        setPauseState(true);
+      }
+    }
+
+    function resumeGameFromScreen(e) {
+      if (e) e.stopPropagation();
+      if (isPaused) {
+        setPauseState(false);
+        startCountdown();
       }
     }
 
@@ -712,32 +762,29 @@
     }
 
     function resetGame() {
-      if (countTimer) {
-        clearInterval(countTimer);
-        countTimer = null;
-      }
       score = 0;
       combo = 0;
       maxCombo = 0;
       isGameOver = false;
       isWaitingRestart = false;
       gameOverTimestamp = 0;
-      isPaused = false;
+      setPauseState(false);
 
-      pauseOverlay.style.display = 'none';
+      if (countdownIntervalId) clearInterval(countdownIntervalId);
+      isCountingDown = false;
+
       resultModal.style.display = 'none';
       leaderboardModal.style.display = 'none';
       setActionButtonState('JUMP');
 
-      phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
-      pauseBtn.innerText = "PAUSE";
-      pauseBtn.style.background = "var(--pause-btn-bg)";
+      phoneFrame.classList.remove('supernova-frame', 'infinity-frame', 'blackhole-frame');
       ropeAngle = 0;
       ropeDirection = 1;
       currentPattern = 'NORMAL';
-      patternTimer = 0;
+      blackholeSpeedMult = 1.0;
+      blackholeTurnsRemaining = 3;
       
-      baseSpeed = 0.085;
+      baseSpeed = 0.075;
       currentSpeed = baseSpeed;
       ropePassed = false;
       hasWhipSoundPlayed = false;
@@ -754,6 +801,7 @@
       particles.length = 0;
       fireworks.length = 0;
       magmaParticles.length = 0;
+      shockwaves.length = 0;
       spaceships.length = 0;
       crashingShip = null;
       glassCracks.length = 0;
@@ -761,8 +809,10 @@
       stageAlert.alpha = 0;
 
       if (selectedMode === 'INFINITY') {
-        stageLevel = 7;
-        phoneFrame.classList.add('infinity-frame');
+        stageLevel = 8;
+        phoneFrame.classList.add('blackhole-frame');
+        blackholeTurnsRemaining = 3;
+        blackholeSpeedMult = 1.0;
       } else {
         stageLevel = 1;
       }
@@ -772,13 +822,9 @@
     }
 
     function startCountdown() {
-      if (countTimer) clearInterval(countTimer);
+      if (countdownIntervalId) clearInterval(countdownIntervalId);
       isCountingDown = true;
       isGameStarted = true;
-      isPaused = false;
-      pauseOverlay.style.display = 'none';
-      pauseBtn.innerText = "PAUSE";
-      pauseBtn.style.background = "var(--pause-btn-bg)";
       countdownValue = 3;
       countdownScale = 2.8;
       
@@ -786,7 +832,7 @@
       playCountSound(false);
       triggerHaptic(40);
 
-      countTimer = setInterval(() => {
+      countdownIntervalId = setInterval(() => {
         countdownValue--;
         countdownScale = 2.8;
 
@@ -797,8 +843,8 @@
           playCountSound(true);
           triggerHaptic([60, 40, 80]);
         } else {
-          clearInterval(countTimer);
-          countTimer = null;
+          clearInterval(countdownIntervalId);
+          countdownIntervalId = null;
           isCountingDown = false;
         }
       }, 1000);
@@ -823,9 +869,7 @@
         return;
       }
 
-      if (isGameOver) {
-        return;
-      }
+      if (isGameOver) return;
 
       if (player.isGrounded) {
         player.vy = player.baseJumpForce;
@@ -836,7 +880,7 @@
         player.scaleY = 1.30;
         soundJump();
         triggerHaptic(15);
-        createParticles(player.x, GROUND_Y, stageLevel === 7 ? '#00ffff' : '#eee', 4);
+        createParticles(player.x, GROUND_Y, stageLevel >= 7 ? '#00ffff' : '#eee', 4);
       }
     }
 
@@ -893,7 +937,7 @@
       gameOverTimestamp = Date.now();
       player.isHoldingJump = false;
       shakeAmount = 0;
-      phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
+      phoneFrame.classList.remove('supernova-frame', 'infinity-frame', 'blackhole-frame');
       soundFail();
       triggerHaptic(280);
       addFloatingText("💥 MISS!!", player.x, player.y - 20, '#ff3333', 24);
@@ -970,8 +1014,12 @@
     }
 
     async function openLeaderboardModal() {
-      if (isGameStarted && !isGameOver && !isPaused) {
-        pauseGame();
+      if (isGameStarted && !isGameOver) {
+        if (isCountingDown) {
+          if (countdownIntervalId) clearInterval(countdownIntervalId);
+          isCountingDown = false;
+        }
+        setPauseState(true);
       }
 
       leaderboardModal.style.display = 'flex';
@@ -1025,12 +1073,8 @@
         isWaitingRestart = true;
         setActionButtonState('RETRY');
       } else if (isGameStarted) {
-        if (isPaused) {
-          pauseOverlay.style.display = 'flex';
-          setActionButtonState('LOCKED');
-        } else {
-          setActionButtonState('JUMP');
-        }
+        setPauseState(true);
+        setActionButtonState('JUMP');
       } else {
         setActionButtonState('JUMP');
       }
@@ -1040,6 +1084,27 @@
       return str.replace(/[&<>'"]/g, tag => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
       }[tag] || tag));
+    }
+
+    function triggerGroundSnapEffect() {
+      hasWhipSoundPlayed = true;
+      playWhipSnapSound();
+      triggerHaptic(12);
+
+      // 바닥 충격파 링 생성
+      shockwaves.push({
+        x: canvas.width / 2,
+        y: GROUND_Y - 2,
+        radiusX: 4,
+        radiusY: 2,
+        maxRadiusX: 48,
+        alpha: 1.0,
+        color: (stageLevel === 8) ? '#ff00ff' : ((stageLevel === 7) ? '#00ffff' : '#ffffff')
+      });
+
+      // 바닥 파편 파티클
+      const hitColor = stageLevel === 8 ? '#ff00aa' : (stageLevel === 7 ? '#00ffff' : (stageLevel === 6 ? '#ff4400' : '#eeddcc'));
+      createParticles(canvas.width / 2, GROUND_Y - 2, hitColor, 6);
     }
 
     function update(dt) {
@@ -1061,7 +1126,7 @@
         if (!player.isGrounded) {
           player.scaleX = 1.45;
           player.scaleY = 0.65;
-          const dustColor = stageLevel === 7 ? '#00ffff' : (stageLevel >= 4 ? '#bb66ff' : '#387320');
+          const dustColor = stageLevel >= 7 ? '#00ffff' : (stageLevel >= 4 ? '#bb66ff' : '#387320');
           createParticles(player.x, GROUND_Y, dustColor, 5);
         }
         player.y = GROUND_Y;
@@ -1070,54 +1135,69 @@
         player.isHoldingJump = false;
       }
 
-      baseSpeed = 0.085 + Math.min(0.045, (score * 0.0012));
-      let whipMultiplier = 0.88 + (1 - Math.cos(ropeAngle)) * 0.32;
+      // 기본 속도 미세 상향 (0.070 -> 0.075 기준)
+      baseSpeed = 0.075 + Math.min(0.038, (score * 0.0009));
+      let whipMultiplier = 0.90 + (1 - Math.cos(ropeAngle)) * 0.28;
+      const stageMultiplier = STAGE_SPEED_MULT[stageLevel] || 1.0;
 
-      if (stageLevel === 7) {
-        patternTimer += 0.02 * dt;
-        if (currentPattern === 'BRAKE_SNAP') {
-          whipMultiplier *= (ropeAngle < Math.PI * 0.8) ? 0.6 : 1.4;
-        } else if (currentPattern === 'DOUBLE_QUICK') {
-          whipMultiplier *= 1.30;
+      // STAGE 8 (블랙홀): 1바퀴 도는 동안 도중 가속 없이 완전 등속 회전
+      let speedVarianceMult = 1.0;
+      let effectiveWhip = whipMultiplier;
+      if (stageLevel === 8) {
+        blackholeAccretionAngle += 0.04 * dt;
+        speedVarianceMult = blackholeSpeedMult;
+        effectiveWhip = 1.0; // 회전 도중 속도 변화 방지 (완전 균일 등속 회전)
+      }
+
+      currentSpeed = baseSpeed * effectiveWhip * stageMultiplier * speedVarianceMult * ropeDirection;
+      ropeAngle += currentSpeed * dt;
+
+      if (ropeAngle >= Math.PI * 2 || ropeAngle < 0) {
+        if (ropeAngle >= Math.PI * 2) {
+          ropeAngle -= Math.PI * 2;
+        } else {
+          ropeAngle += Math.PI * 2;
         }
+        ropePassed = false;
+        hasWhipSoundPlayed = false;
 
-        if (ropePassed && Math.random() < 0.035) {
-          const patterns = ['REVERSE', 'BRAKE_SNAP', 'DOUBLE_QUICK', 'NORMAL'];
-          const picked = patterns[Math.floor(Math.random() * patterns.length)];
-          if (picked !== currentPattern) {
-            currentPattern = picked;
-            if (currentPattern === 'REVERSE') {
-              ropeDirection *= -1;
-              addFloatingText("⚡ REVERSE!!", 180, 140, '#ff00ff', 18);
-              shakeAmount = 6;
-              triggerHaptic([30, 40, 50]);
-            } else if (currentPattern === 'BRAKE_SNAP') {
-              addFloatingText("🛑 FAKE SLOW!", 180, 140, '#ffee00', 18);
-            } else if (currentPattern === 'DOUBLE_QUICK') {
-              addFloatingText("💨 SPEED UP!", 180, 140, '#00ffff', 18);
+        // STAGE 8: 캐릭터가 줄을 넘은 뒤(회전 완료 시점)에만 체크하며, 2~4턴간 동일 속도 유지 후 변경
+        if (stageLevel === 8) {
+          ropeDirection = 1; // 정방향 고정
+          blackholeTurnsRemaining--;
+
+          if (blackholeTurnsRemaining <= 0) {
+            // 한 번 정해진 속도를 2~4바퀴 동안 변함없이 유지
+            blackholeTurnsRemaining = Math.floor(Math.random() * 3) + 2;
+            const roll = Math.random();
+            const prev = currentPattern;
+
+            if (roll < 0.32) {
+              currentPattern = 'SLOW';
+              blackholeSpeedMult = 0.72; // 중력 슬로우 턴
+              if (prev !== 'SLOW') addFloatingText("🪐 SLOW", 180, 140, '#66ccff', 16);
+            } else if (roll < 0.68) {
+              currentPattern = 'NORMAL';
+              blackholeSpeedMult = 1.05; // 기본 속도 턴
+              if (prev !== 'NORMAL') addFloatingText("🌀 NORMAL", 180, 140, '#aaccff', 15);
+            } else if (roll < 0.88) {
+              currentPattern = 'FAST';
+              blackholeSpeedMult = 1.38; // 쾌속 턴
+              if (prev !== 'FAST') addFloatingText("⚡ FAST!", 180, 140, '#ff00aa', 16);
+            } else {
+              currentPattern = 'HYPER';
+              blackholeSpeedMult = 1.68; // 초광속 턴
+              if (prev !== 'HYPER') addFloatingText("💥 WARP SPEED!", 180, 140, '#ffee00', 17);
+              shakeAmount = 4;
+              triggerHaptic(25);
             }
           }
         }
       }
 
-      currentSpeed = baseSpeed * whipMultiplier * ropeDirection;
-      ropeAngle += currentSpeed * dt;
-
-      if (ropeAngle >= Math.PI * 2) {
-        ropeAngle -= Math.PI * 2;
-        ropePassed = false;
-        hasWhipSoundPlayed = false;
-      } else if (ropeAngle < 0) {
-        ropeAngle += Math.PI * 2;
-        ropePassed = false;
-        hasWhipSoundPlayed = false;
-      }
-
+      // 바닥 타격 스냅 사운드 및 이펙트 트리거
       if (ropeAngle > Math.PI - 0.28 && ropeAngle < Math.PI + 0.28 && !hasWhipSoundPlayed) {
-        hasWhipSoundPlayed = true;
-        playWhipSound();
-        const hitColor = stageLevel === 7 ? '#00ffff' : (stageLevel === 6 ? '#ff4400' : '#d0b080');
-        createParticles(canvas.width / 2, GROUND_Y - 2, hitColor, 5);
+        triggerGroundSnapEffect();
       }
 
       const isRopeAtBottom = (ropeAngle > Math.PI - 0.35 && ropeAngle < Math.PI + 0.35);
@@ -1176,9 +1256,11 @@
       updateEffects(dt);
     }
 
+    // 5점 단위 빠른 스테이지 승급 기준 (이전 텀 복원)
     function checkStageProgression() {
       let newStage = 1;
-      if (score >= 30) newStage = 7;
+      if (score >= 35) newStage = 8;
+      else if (score >= 30) newStage = 7;
       else if (score >= 25) newStage = 6;
       else if (score >= 20) newStage = 5;
       else if (score >= 15) newStage = 4;
@@ -1191,12 +1273,18 @@
         playLevelUpFanfare();
         triggerHaptic([50, 40, 50, 40, 90]);
 
-        phoneFrame.classList.remove('supernova-frame', 'infinity-frame');
+        phoneFrame.classList.remove('supernova-frame', 'infinity-frame', 'blackhole-frame');
         if (stageLevel === 6) phoneFrame.classList.add('supernova-frame');
         if (stageLevel === 7) phoneFrame.classList.add('infinity-frame');
+        if (stageLevel === 8) {
+          phoneFrame.classList.add('blackhole-frame');
+          blackholeTurnsRemaining = 3;
+          blackholeSpeedMult = 1.0;
+          currentPattern = 'NORMAL';
+        }
 
-        const titles = ["", "STAGE 1: DAY", "STAGE 2: SUNSET", "STAGE 3: NIGHT", "STAGE 4: SPACE", "STAGE 5: FIREWORKS!", "STAGE 6: SUPERNOVA 🔥", "STAGE 7: INFINITY 🌌"];
-        const subs = ["", "맑은 하늘", "황혼의 노을", "별이 빛나는 밤", "우주 진입!", "축제 폭죽!", "초신성 폭발!", "화면 충돌 카오스!"];
+        const titles = ["", "STAGE 1: DAY", "STAGE 2: SUNSET", "STAGE 3: NIGHT", "STAGE 4: SPACE", "STAGE 5: FIREWORKS!", "STAGE 6: SUPERNOVA 🔥", "STAGE 7: HYPER SPEED ⚡", "STAGE 8: BLACK HOLE 🕳️"];
+        const subs = ["", "맑은 하늘", "황혼의 노을", "별이 빛나는 밤", "우주 진입!", "축제 폭죽!", "초신성 폭발!", "광속 회전 오버드라이브!", "중력 왜곡 특이점!"];
         triggerStageAlert(titles[stageLevel], subs[stageLevel]);
       }
     }
@@ -1237,10 +1325,22 @@
       if (stageLevel === 7) {
         for (let i = 0; i < warpStars.length; i++) {
           const s = warpStars[i];
-          s.y += s.speed * dt;
+          s.y += s.speed * 1.4 * dt;
           if (s.y > 380) {
             s.y = -s.length;
             s.x = Math.random() * 360;
+          }
+        }
+      }
+
+      if (stageLevel === 8) {
+        for (let i = 0; i < blackholeInwardStars.length; i++) {
+          const bs = blackholeInwardStars[i];
+          bs.radius -= bs.speed * 1.5 * dt;
+          bs.angle += 0.05 * dt;
+          if (bs.radius <= 6) {
+            bs.radius = Math.random() * 160 + 50;
+            bs.angle = Math.random() * Math.PI * 2;
           }
         }
 
@@ -1313,6 +1413,14 @@
           glassCracks[i].alpha -= 0.012 * dt;
           if (glassCracks[i].alpha <= 0) glassCracks.splice(i, 1);
         }
+      }
+
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radiusX += 3.5 * dt;
+        sw.radiusY += 1.4 * dt;
+        sw.alpha -= 0.08 * dt;
+        if (sw.alpha <= 0 || sw.radiusX >= sw.maxRadiusX) shockwaves.splice(i, 1);
       }
 
       for (let i = fireworks.length - 1; i >= 0; i--) {
@@ -1412,10 +1520,11 @@
     function updateUI() {
       scoreText.innerText = score;
       bestText.innerText = `(BEST: ${bestScore})`;
-      const stageNames = ["", "STAGE 1: DAY", "STAGE 2: SUNSET", "STAGE 3: NIGHT", "STAGE 4: SPACE", "STAGE 5: FIREWORKS!", "STAGE 6: SUPERNOVA 🔥", "STAGE 7: INFINITY 🌌"];
+      const stageNames = ["", "STAGE 1: DAY", "STAGE 2: SUNSET", "STAGE 3: NIGHT", "STAGE 4: SPACE", "STAGE 5: FIREWORKS!", "STAGE 6: SUPERNOVA 🔥", "STAGE 7: HYPER SPEED ⚡", "STAGE 8: BLACK HOLE 🕳️"];
       stageBadge.innerText = stageNames[stageLevel];
       
-      if (stageLevel === 7) stageBadge.style.color = '#00ffff';
+      if (stageLevel === 8) stageBadge.style.color = '#bf00ff';
+      else if (stageLevel === 7) stageBadge.style.color = '#00ffff';
       else if (stageLevel === 6) stageBadge.style.color = '#ff4400';
       else if (stageLevel >= 4) stageBadge.style.color = '#ff99ff';
       else if (stageLevel === 2) stageBadge.style.color = '#ffbb44';
@@ -1425,21 +1534,41 @@
     function update3DRopePoints() {
       const rotY = Math.cos(ropeAngle - Math.PI);
       const rotZ = -Math.sin(ropeAngle - Math.PI);
-      const topRadius = 120;
-      const maxBottomRadius = (GROUND_Y - LEFT_HAND.y);
+      const topRadius = 118;
+      // 바닥을 파고드는 가상 충돌 반경(바닥 충돌 탄성 계산용)
+      const theoreticalBottomRadius = (GROUND_Y - LEFT_HAND.y) + 16;
+
+      const angleDiff = Math.abs((ropeAngle % (Math.PI * 2)) - Math.PI);
+      const isNearFloor = angleDiff < 0.52;
 
       for (let i = 0; i <= ROPE_SEGMENTS; i++) {
         const t = i / ROPE_SEGMENTS;
         const curveWeight = Math.sin(t * Math.PI);
-        const wx = LEFT_HAND.x + (RIGHT_HAND.x - LEFT_HAND.x) * t;
+        let wx = LEFT_HAND.x + (RIGHT_HAND.x - LEFT_HAND.x) * t;
 
-        let radiusY = (rotY > 0) ? maxBottomRadius : topRadius;
+        let radiusY = (rotY > 0) ? theoreticalBottomRadius : topRadius;
         let wy = LEFT_HAND.y + (rotY * radiusY * curveWeight);
-        if (wy > GROUND_Y - 2) wy = GROUND_Y - 2;
 
-        const maxZDepth = 90;
+        // 줄이 바닥에 닿을 때의 물리적 충돌 변형 (바닥 밀착 + 납작해짐 + 양옆 반발 S-커브)
+        if (rotY > 0 && wy >= GROUND_Y - 3) {
+          const penetration = wy - (GROUND_Y - 3);
+          wy = GROUND_Y - 3; // 바닥 라인에 밀착(Flatten)
+
+          // 중앙부 줄이 바닥에 짓눌려 좌우로 살짝 퍼지는 스쿼시 효과
+          const centerDist = (t - 0.5);
+          wx += centerDist * penetration * 0.40;
+
+          // 바닥과 닿는 경계 지점(t: 0.2~0.35, 0.65~0.8)에서 줄이 위로 튕겨 올라가는 충격 반발파
+          if (t > 0.18 && t < 0.36) {
+            wy -= Math.sin((t - 0.18) / 0.18 * Math.PI) * (penetration * 0.38);
+          } else if (t > 0.64 && t < 0.82) {
+            wy -= Math.sin((t - 0.64) / 0.18 * Math.PI) * (penetration * 0.38);
+          }
+        }
+
+        const maxZDepth = 88;
         const wz = rotZ * maxZDepth * curveWeight;
-        const scale = 1.0 + (wz / 200);
+        const scale = 1.0 + (wz / 210);
 
         const centerX = 180;
         const centerY = GROUND_Y - 45;
@@ -1457,8 +1586,10 @@
       ctx.save();
 
       let totalShake = isGameOver ? 0 : shakeAmount;
-      if (!isGameOver && stageLevel === 7 && isGameStarted && !isPaused && !isCountingDown) {
-        totalShake = Math.max(totalShake, 2.5);
+      if (!isGameOver && stageLevel === 8 && isGameStarted && !isPaused && !isCountingDown) {
+        totalShake = Math.max(totalShake, 2.8);
+      } else if (!isGameOver && stageLevel === 7 && isGameStarted && !isPaused && !isCountingDown) {
+        totalShake = Math.max(totalShake, 2.2);
       } else if (!isGameOver && stageLevel === 6 && isGameStarted && !isPaused) {
         totalShake = Math.max(totalShake, 1.8);
       }
@@ -1469,9 +1600,16 @@
         ctx.translate(sx, sy);
       }
 
+      // STAGE 8 블랙홀 중력 왜곡(꿀렁임)
+      if (stageLevel === 8 && isGameStarted && !isGameOver && !isPaused) {
+        const wobbleX = Math.sin(Date.now() * 0.004) * 2.5;
+        const wobbleY = Math.cos(Date.now() * 0.003) * 2.0;
+        ctx.translate(wobbleX, wobbleY);
+      }
+
       drawDynamicBackground();
 
-      if (stageLevel === 7) {
+      if (stageLevel === 8) {
         for (let i = 0; i < astroAnimals.length; i++) drawAstroAnimal(astroAnimals[i]);
         for (let i = 0; i < spaceships.length; i++) drawSpaceship(spaceships[i]);
       }
@@ -1485,8 +1623,12 @@
         ctx.fillStyle = `rgba(255, 30, 0, ${redPulse})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else if (stageLevel === 7 && isGameStarted && !isGameOver && !isPaused && !isCountingDown) {
-        const neonPulse = 0.09 + 0.07 * Math.sin(Date.now() * 0.025);
+        const neonPulse = 0.08 + 0.06 * Math.sin(Date.now() * 0.025);
         ctx.fillStyle = `rgba(0, 255, 255, ${neonPulse})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (stageLevel === 8 && isGameStarted && !isGameOver && !isPaused && !isCountingDown) {
+        const purplePulse = 0.12 + 0.08 * Math.sin(Date.now() * 0.018);
+        ctx.fillStyle = `rgba(180, 0, 255, ${purplePulse})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
@@ -1500,6 +1642,18 @@
       if (ropeBehind) render3DRope(ropePoints);
       drawJuicyPlayer(player.x, player.y, player.scaleX, player.scaleY);
       if (!ropeBehind) render3DRope(ropePoints);
+
+      for (let i = 0; i < shockwaves.length; i++) {
+        const sw = shockwaves[i];
+        ctx.save();
+        ctx.globalAlpha = sw.alpha;
+        ctx.strokeStyle = sw.color;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.ellipse(sw.x, sw.y, sw.radiusX, sw.radiusY, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       if (glassCracks.length > 0) {
         for (let i = 0; i < glassCracks.length; i++) {
@@ -1560,7 +1714,7 @@
         ctx.textAlign = 'center';
         ctx.fillStyle = '#000';
         ctx.fillText(stageAlert.text, 2, 2);
-        ctx.fillStyle = (stageLevel === 7) ? '#00ffff' : '#ffee00';
+        ctx.fillStyle = (stageLevel === 8) ? '#bf00ff' : ((stageLevel === 7) ? '#00ffff' : '#ffee00');
         ctx.fillText(stageAlert.text, 0, 0);
         ctx.font = 'bold 13px Courier New';
         ctx.fillStyle = '#ffffff';
@@ -1585,44 +1739,8 @@
         drawCountdownOverlay();
       } else if (!isGameStarted) {
         drawOverlay("넘어넘어: CAT JUMP", "하단 점프 버튼 또는 화면 터치로 시작!");
-      } else if (isWaitingRestart) {
-        drawOverlay("READY TO RETRY?", "화면 터치 또는 하단 버튼을 눌러 재도전");
       }
 
-      ctx.restore();
-    }
-
-    let lastFrameTime = performance.now();
-    function gameLoop(currentTime) {
-      const deltaMs = currentTime - lastFrameTime;
-      lastFrameTime = currentTime;
-      const dt = Math.min(1.5, Math.max(0.5, deltaMs / 16.667));
-
-      update(dt);
-      draw();
-      requestAnimationFrame(gameLoop);
-    }
-
-    function drawCountdownOverlay() {
-      countdownScale += (1.0 - countdownScale) * 0.15;
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.scale(countdownScale, countdownScale);
-      ctx.font = '900 54px Courier New';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      const displayText = countdownValue > 0 ? `${countdownValue}` : "START!!";
-      const displayColor = (stageLevel === 7) 
-        ? (countdownValue > 0 ? "#00ffff" : "#ff00ff") 
-        : (countdownValue > 0 ? "#ffee00" : "#33ff66");
-
-      ctx.fillStyle = '#000';
-      ctx.fillText(displayText, 3, 3);
-      ctx.fillStyle = displayColor;
-      ctx.fillText(displayText, 0, 0);
       ctx.restore();
     }
 
@@ -1649,12 +1767,14 @@
       } else if (stageLevel === 6) {
         skyGrad.addColorStop(0, '#380000'); skyGrad.addColorStop(0.5, '#7a0900'); skyGrad.addColorStop(1, '#d13400');
         groundColor = '#260a0a'; groundBorder = '#691515';
+      } else if (stageLevel === 7) {
+        skyGrad.addColorStop(0, '#001a33'); skyGrad.addColorStop(0.6, '#000814'); skyGrad.addColorStop(1, '#002244');
       } else {
-        skyGrad.addColorStop(0, '#000000'); skyGrad.addColorStop(1, '#020208');
+        skyGrad.addColorStop(0, '#030008'); skyGrad.addColorStop(1, '#000000');
       }
 
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, canvas.width, stageLevel === 7 ? canvas.height : GROUND_Y);
+      ctx.fillRect(0, 0, canvas.width, stageLevel >= 7 ? canvas.height : GROUND_Y);
 
       if (stageLevel >= 3 && stageLevel <= 6) {
         for (let i = 0; i < backgroundStars.length; i++) {
@@ -1676,6 +1796,42 @@
           ctx.lineTo(w.x, w.y + w.length);
           ctx.stroke();
         }
+      }
+
+      if (stageLevel === 8) {
+        const cx = 180, cy = 110;
+        
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(blackholeAccretionAngle);
+        const grad = ctx.createRadialGradient(0, 0, 15, 0, 0, 65);
+        grad.addColorStop(0, 'rgba(0,0,0,1)');
+        grad.addColorStop(0.4, 'rgba(255, 0, 170, 0.85)');
+        grad.addColorStop(0.7, 'rgba(0, 255, 255, 0.6)');
+        grad.addColorStop(1, 'rgba(191, 0, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 75, 26, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#bf00ff';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        for (let i = 0; i < blackholeInwardStars.length; i++) {
+          const bs = blackholeInwardStars[i];
+          const px = cx + Math.cos(bs.angle) * bs.radius;
+          const py = cy + Math.sin(bs.angle) * (bs.radius * 0.45);
+          ctx.fillStyle = bs.color;
+          ctx.globalAlpha = Math.min(1.0, bs.radius / 30);
+          ctx.fillRect(px, py, bs.size, bs.size);
+        }
+        ctx.globalAlpha = 1;
       }
 
       if (stageLevel === 4) {
@@ -1703,80 +1859,6 @@
       }
     }
 
-    function drawSpaceship(s) {
-      ctx.save();
-      ctx.translate(s.x, s.y);
-      if (s.vx < 0) ctx.scale(-1, 1);
-      if (s.type === 'ROCKET') {
-        ctx.fillStyle = '#e6e6e6';
-        ctx.fillRect(-12, -6, 24, 12);
-        ctx.fillStyle = s.color;
-        ctx.beginPath();
-        ctx.moveTo(-12, -10); ctx.lineTo(-4, -6); ctx.lineTo(-12, -6); ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(-12, 10); ctx.lineTo(-4, 6); ctx.lineTo(-12, 6); ctx.fill();
-        ctx.fillStyle = '#ff6600';
-        ctx.fillRect(-18, -3, 6, 6);
-      } else {
-        ctx.fillStyle = '#00ffff';
-        ctx.beginPath();
-        ctx.arc(0, -3, 7, Math.PI, 0);
-        ctx.fill();
-        ctx.fillStyle = s.color;
-        ctx.beginPath();
-        ctx.ellipse(0, 2, 16, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    function drawCrashingSpaceship(c) {
-      ctx.save();
-      ctx.translate(c.x, c.y);
-      ctx.rotate(c.rot);
-      ctx.scale(c.scale, c.scale);
-      ctx.fillStyle = '#ff0055';
-      ctx.beginPath(); ctx.arc(0, -6, 12, Math.PI, 0); ctx.fill();
-      ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#00ffcc';
-      ctx.beginPath(); ctx.ellipse(0, 4, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#ffff00';
-      ctx.beginPath(); ctx.arc(-14, 4, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(0, 6, 3.5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(14, 4, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    function drawAstroAnimal(a) {
-      ctx.save();
-      ctx.translate(a.x, a.y);
-      ctx.rotate(a.angle);
-      ctx.scale(a.scale, a.scale);
-      ctx.fillStyle = '#e6e6e6';
-      ctx.fillRect(-10, -8, 20, 20);
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-10, -8, 20, 20);
-
-      if (a.type === 'RABBIT') {
-        ctx.fillStyle = '#ffb3ba'; ctx.fillRect(-8, -24, 4, 10); ctx.fillRect(4, -24, 4, 10);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -14, 16, 14);
-      } else if (a.type === 'CAT') {
-        ctx.fillStyle = '#ffdfba'; ctx.fillRect(-9, -18, 5, 5); ctx.fillRect(4, -18, 5, 5);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -14, 16, 14);
-      } else {
-        ctx.fillStyle = '#baffc9'; ctx.fillRect(-8, -14, 16, 14);
-      }
-
-      ctx.fillStyle = '#000'; ctx.fillRect(-4, -9, 2, 3); ctx.fillRect(2, -9, 2, 3);
-      ctx.fillStyle = 'rgba(120, 220, 255, 0.35)';
-      ctx.beginPath(); ctx.arc(0, -7, 15, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -18, 4, 4);
-      ctx.restore();
-    }
-
     function render3DRope(points) {
       for (let i = 0; i < points.length - 1; i++) {
         const p1 = points[i];
@@ -1793,7 +1875,10 @@
           coreColor = '#ff2200';
         } else if (stageLevel === 7) {
           strokeColor = (avgScale >= 1.0) ? '#00ffff' : '#0077aa';
-          coreColor = '#ff00ff';
+          coreColor = '#00e5ff';
+        } else if (stageLevel === 8) {
+          strokeColor = (avgScale >= 1.0) ? '#ff00ff' : '#660066';
+          coreColor = '#00ffff';
         }
 
         ctx.beginPath();
@@ -1915,16 +2000,16 @@
         ctx.fillRect(2, -5, 3, 2);
       }
 
-      if (stageLevel === 7) {
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.22)';
+      if (stageLevel >= 7) {
+        ctx.fillStyle = stageLevel === 8 ? 'rgba(191, 0, 255, 0.22)' : 'rgba(0, 255, 255, 0.22)';
         ctx.beginPath();
         ctx.arc(0, -18, 22, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#00ffff';
+        ctx.strokeStyle = stageLevel === 8 ? '#bf00ff' : '#00ffff';
         ctx.lineWidth = 1.8;
         ctx.stroke();
 
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.28)';
+        ctx.fillStyle = stageLevel === 8 ? 'rgba(255, 0, 170, 0.28)' : 'rgba(0, 255, 255, 0.28)';
         ctx.beginPath();
         ctx.arc(-10, -32, 6, 0, Math.PI * 2);
         ctx.arc(10, -32, 6, 0, Math.PI * 2);
@@ -2014,6 +2099,80 @@
       ctx.restore();
     }
 
+    function drawSpaceship(s) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      if (s.vx < 0) ctx.scale(-1, 1);
+      if (s.type === 'ROCKET') {
+        ctx.fillStyle = '#e6e6e6';
+        ctx.fillRect(-12, -6, 24, 12);
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.moveTo(-12, -10); ctx.lineTo(-4, -6); ctx.lineTo(-12, -6); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-12, 10); ctx.lineTo(-4, 6); ctx.lineTo(-12, 6); ctx.fill();
+        ctx.fillStyle = '#ff6600';
+        ctx.fillRect(-18, -3, 6, 6);
+      } else {
+        ctx.fillStyle = '#00ffff';
+        ctx.beginPath();
+        ctx.arc(0, -3, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 2, 16, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawCrashingSpaceship(c) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(c.rot);
+      ctx.scale(c.scale, c.scale);
+      ctx.fillStyle = '#ff0055';
+      ctx.beginPath(); ctx.arc(0, -6, 12, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#00ffcc';
+      ctx.beginPath(); ctx.ellipse(0, 4, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath(); ctx.arc(-14, 4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 6, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(14, 4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawAstroAnimal(a) {
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.angle);
+      ctx.scale(a.scale, a.scale);
+      ctx.fillStyle = '#e6e6e6';
+      ctx.fillRect(-10, -8, 20, 20);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-10, -8, 20, 20);
+
+      if (a.type === 'RABBIT') {
+        ctx.fillStyle = '#ffb3ba'; ctx.fillRect(-8, -24, 4, 10); ctx.fillRect(4, -24, 4, 10);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -14, 16, 14);
+      } else if (a.type === 'CAT') {
+        ctx.fillStyle = '#ffdfba'; ctx.fillRect(-9, -18, 5, 5); ctx.fillRect(4, -18, 5, 5);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -14, 16, 14);
+      } else {
+        ctx.fillStyle = '#baffc9'; ctx.fillRect(-8, -14, 16, 14);
+      }
+
+      ctx.fillStyle = '#000'; ctx.fillRect(-4, -9, 2, 3); ctx.fillRect(2, -9, 2, 3);
+      ctx.fillStyle = 'rgba(120, 220, 255, 0.35)';
+      ctx.beginPath(); ctx.arc(0, -7, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(-8, -18, 4, 4);
+      ctx.restore();
+    }
+
     function drawOverlay(title, sub) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -2029,6 +2188,40 @@
       lines.forEach((line, idx) => {
         ctx.fillText(line, canvas.width / 2, canvas.height / 2 + 15 + (idx * 22));
       });
+    }
+
+    function drawCountdownOverlay() {
+      countdownScale += (1.0 - countdownScale) * 0.15;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(countdownScale, countdownScale);
+      ctx.font = '900 54px Courier New';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const displayText = countdownValue > 0 ? `${countdownValue}` : "START!!";
+      const displayColor = (stageLevel === 8)
+        ? (countdownValue > 0 ? "#bf00ff" : "#ff00aa")
+        : (stageLevel === 7 ? (countdownValue > 0 ? "#00ffff" : "#ff00ff") : (countdownValue > 0 ? "#ffee00" : "#33ff66"));
+
+      ctx.fillStyle = '#000';
+      ctx.fillText(displayText, 3, 3);
+      ctx.fillStyle = displayColor;
+      ctx.fillText(displayText, 0, 0);
+      ctx.restore();
+    }
+
+    let lastFrameTime = performance.now();
+    function gameLoop(currentTime) {
+      const deltaMs = currentTime - lastFrameTime;
+      lastFrameTime = currentTime;
+      const dt = Math.min(1.5, Math.max(0.5, deltaMs / 16.667));
+
+      update(dt);
+      draw();
+      requestAnimationFrame(gameLoop);
     }
 
     window.onload = function() {
